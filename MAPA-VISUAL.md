@@ -138,6 +138,42 @@ ACCIÓN FINAL
 
 ---
 
+## Arquitectura RAG
+
+```
+╔══════════════════ PIPELINE RAG ══════════════════╗
+║                                                  ║
+║  FASE 1 — INDEXACIÓN (off-line, una vez)         ║
+║  ─────────────────────────────────────           ║
+║  📄 Docs ──► ✂️ Chunks ──► 🔢 Embed ──► 🗄️ VectorDB
+║                                                  ║
+║  FASE 2 — CONSULTA (on-line, cada pregunta)      ║
+║  ─────────────────────────────────────           ║
+║  ❓ Query ──► 🔢 Embed ──► 🔍 Similitud           ║
+║                               │                  ║
+║                         top-K chunks             ║
+║                               │                  ║
+║                    🤖 LLM + Contexto              ║
+║                               │                  ║
+║                         💬 Respuesta              ║
+╚══════════════════════════════════════════════════╝
+
+  TIC: "El Estudiante con Biblioteca"
+  Busca primero → Lee la fuente → Responde con evidencia
+```
+
+```
+VARIANTES RAG (2025-2026):
+──────────────────────────
+  RAG Básico:    Query → 1 búsqueda → LLM → Respuesta
+  Self-RAG:      LLM decide SI/NO necesita recuperar
+  Agentic RAG:   Agente controla múltiples búsquedas
+  GraphRAG:      Usa grafo de conocimiento (relaciones)
+  RAPTOR:        Árbol jerárquico de resúmenes
+```
+
+---
+
 ## IA Local vs IA en la Nube
 
 ```

@@ -1,0 +1,170 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <!-- Fondo principal -->
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0f1e"/>
+      <stop offset="100%" style="stop-color:#0d1b35"/>
+    </linearGradient>
+    <!-- Glow izquierdo violeta -->
+    <radialGradient id="glowLeft" cx="20%" cy="40%" r="45%">
+      <stop offset="0%" style="stop-color:#6d28d9;stop-opacity:0.35"/>
+      <stop offset="100%" style="stop-color:#6d28d9;stop-opacity:0"/>
+    </radialGradient>
+    <!-- Glow derecho cyan -->
+    <radialGradient id="glowRight" cx="85%" cy="60%" r="40%">
+      <stop offset="0%" style="stop-color:#0891b2;stop-opacity:0.25"/>
+      <stop offset="100%" style="stop-color:#0891b2;stop-opacity:0"/>
+    </radialGradient>
+    <!-- Gradiente titulo -->
+    <linearGradient id="titleGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#a78bfa"/>
+      <stop offset="50%" style="stop-color:#60a5fa"/>
+      <stop offset="100%" style="stop-color:#34d399"/>
+    </linearGradient>
+    <!-- Gradiente borde card -->
+    <linearGradient id="cardBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#7c3aed;stop-opacity:0.6"/>
+      <stop offset="100%" style="stop-color:#0891b2;stop-opacity:0.3"/>
+    </linearGradient>
+    <!-- Blur filter para glows -->
+    <filter id="blur" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="40"/>
+    </filter>
+    <filter id="softBlur">
+      <feGaussianBlur stdDeviation="1.5"/>
+    </filter>
+    <!-- Grid pattern -->
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#ffffff" stroke-width="0.3" opacity="0.06"/>
+    </pattern>
+  </defs>
+
+  <!-- Fondo -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+
+  <!-- Glows de fondo -->
+  <ellipse cx="240" cy="252" rx="400" ry="320" fill="url(#glowLeft)" filter="url(#blur)"/>
+  <ellipse cx="1020" cy="378" rx="340" ry="270" fill="url(#glowRight)" filter="url(#blur)"/>
+
+  <!-- Línea decorativa superior -->
+  <rect x="0" y="0" width="1200" height="3" fill="url(#titleGrad)" opacity="0.8"/>
+
+  <!-- ── CONTENIDO PRINCIPAL ── -->
+
+  <!-- Badge "Curso Gratuito" -->
+  <rect x="80" y="72" width="160" height="30" rx="15" fill="#7c3aed" opacity="0.25"/>
+  <rect x="80" y="72" width="160" height="30" rx="15" fill="none" stroke="#7c3aed" stroke-width="1" opacity="0.5"/>
+  <text x="160" y="92" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="600" fill="#a78bfa" text-anchor="middle" letter-spacing="1">🎓 CURSO GRATUITO</text>
+
+  <!-- Título principal -->
+  <text x="80" y="175" font-family="Inter, system-ui, sans-serif" font-size="62" font-weight="900" fill="url(#titleGrad)" letter-spacing="-1">Aprende MCP</text>
+  <text x="80" y="250" font-family="Inter, system-ui, sans-serif" font-size="62" font-weight="900" fill="#f1f5f9" letter-spacing="-1">y Agentes de IA</text>
+
+  <!-- Subtítulo -->
+  <text x="80" y="305" font-family="Inter, system-ui, sans-serif" font-size="22" font-weight="400" fill="#94a3b8">De cero a experto: MCP · Agentes · n8n · Ollama · RAG</text>
+
+  <!-- Separador -->
+  <rect x="80" y="335" width="60" height="3" rx="2" fill="url(#titleGrad)"/>
+
+  <!-- Stats row -->
+  <text x="80" y="375" font-family="Inter, system-ui, sans-serif" font-size="16" fill="#64748b">
+    <tspan fill="#a78bfa" font-weight="700">6 módulos</tspan>
+    <tspan fill="#334155">  ·  </tspan>
+    <tspan fill="#60a5fa" font-weight="700">+20 lecciones</tspan>
+    <tspan fill="#334155">  ·  </tspan>
+    <tspan fill="#34d399" font-weight="700">Código en Python &amp; JS</tspan>
+    <tspan fill="#334155">  ·  </tspan>
+    <tspan fill="#f59e0b" font-weight="700">100% práctico</tspan>
+  </text>
+
+  <!-- ── CARDS DE MÓDULOS (derecha) ── -->
+
+  <!-- Card 1: Fundamentos -->
+  <rect x="620" y="60" width="235" height="72" rx="12" fill="#1e293b" opacity="0.9"/>
+  <rect x="620" y="60" width="235" height="72" rx="12" fill="none" stroke="#6366f1" stroke-width="1" opacity="0.4"/>
+  <rect x="620" y="60" width="4" height="72" rx="2" fill="#6366f1"/>
+  <text x="638" y="90" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#6366f1" font-weight="700" letter-spacing="1">01 · FUNDAMENTOS</text>
+  <text x="638" y="112" font-family="Inter, system-ui, sans-serif" font-size="20" fill="#e2e8f0">🧠 Agentes &amp; MCP</text>
+
+  <!-- Card 2: MCP -->
+  <rect x="870" y="60" width="250" height="72" rx="12" fill="#1e293b" opacity="0.9"/>
+  <rect x="870" y="60" width="250" height="72" rx="12" fill="none" stroke="#06b6d4" stroke-width="1" opacity="0.4"/>
+  <rect x="870" y="60" width="4" height="72" rx="2" fill="#06b6d4"/>
+  <text x="888" y="90" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#06b6d4" font-weight="700" letter-spacing="1">02 · MCP</text>
+  <text x="888" y="112" font-family="Inter, system-ui, sans-serif" font-size="20" fill="#e2e8f0">🔌 Protocolo USB</text>
+
+  <!-- Card 3: Agentes + RAG -->
+  <rect x="620" y="150" width="235" height="72" rx="12" fill="#1e293b" opacity="0.9"/>
+  <rect x="620" y="150" width="235" height="72" rx="12" fill="none" stroke="#8b5cf6" stroke-width="1" opacity="0.4"/>
+  <rect x="620" y="150" width="4" height="72" rx="2" fill="#8b5cf6"/>
+  <text x="638" y="180" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#8b5cf6" font-weight="700" letter-spacing="1">03 · AGENTES + RAG</text>
+  <text x="638" y="202" font-family="Inter, system-ui, sans-serif" font-size="20" fill="#e2e8f0">🤖 Tipos &amp; RAG</text>
+
+  <!-- Card 4: n8n -->
+  <rect x="870" y="150" width="250" height="72" rx="12" fill="#1e293b" opacity="0.9"/>
+  <rect x="870" y="150" width="250" height="72" rx="12" fill="none" stroke="#f97316" stroke-width="1" opacity="0.4"/>
+  <rect x="870" y="150" width="4" height="72" rx="2" fill="#f97316"/>
+  <text x="888" y="180" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#f97316" font-weight="700" letter-spacing="1">04 · N8N</text>
+  <text x="888" y="202" font-family="Inter, system-ui, sans-serif" font-size="20" fill="#e2e8f0">⚙️ Automatización</text>
+
+  <!-- Card 5: IA Local -->
+  <rect x="620" y="240" width="235" height="72" rx="12" fill="#1e293b" opacity="0.9"/>
+  <rect x="620" y="240" width="235" height="72" rx="12" fill="none" stroke="#10b981" stroke-width="1" opacity="0.4"/>
+  <rect x="620" y="240" width="4" height="72" rx="2" fill="#10b981"/>
+  <text x="638" y="270" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#10b981" font-weight="700" letter-spacing="1">05 · IA LOCAL</text>
+  <text x="638" y="292" font-family="Inter, system-ui, sans-serif" font-size="20" fill="#e2e8f0">🏠 Ollama &amp; Local</text>
+
+  <!-- Card 6: Ecosistema -->
+  <rect x="870" y="240" width="250" height="72" rx="12" fill="#1e293b" opacity="0.9"/>
+  <rect x="870" y="240" width="250" height="72" rx="12" fill="none" stroke="#f59e0b" stroke-width="1" opacity="0.4"/>
+  <rect x="870" y="240" width="4" height="72" rx="2" fill="#f59e0b"/>
+  <text x="888" y="270" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#f59e0b" font-weight="700" letter-spacing="1">06 · ECOSISTEMA</text>
+  <text x="888" y="292" font-family="Inter, system-ui, sans-serif" font-size="20" fill="#e2e8f0">🌐 LangChain+CrewAI</text>
+
+  <!-- ── SECCIÓN INFERIOR ── -->
+
+  <!-- Divisor -->
+  <rect x="0" y="460" width="1200" height="1" fill="#1e293b"/>
+
+  <!-- Footer izquierda: tech stack -->
+  <text x="80" y="510" font-family="Inter, system-ui, sans-serif" font-size="14" fill="#475569" font-weight="500">Stack cubierto:</text>
+
+  <!-- Tags tech -->
+  <!-- Python -->
+  <rect x="80" y="524" width="72" height="26" rx="6" fill="#3b82f610"/>
+  <rect x="80" y="524" width="72" height="26" rx="6" fill="none" stroke="#3b82f6" stroke-width="1" opacity="0.4"/>
+  <text x="116" y="541" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#60a5fa" text-anchor="middle" font-weight="600">Python</text>
+
+  <!-- JavaScript -->
+  <rect x="162" y="524" width="90" height="26" rx="6" fill="#eab30810"/>
+  <rect x="162" y="524" width="90" height="26" rx="6" fill="none" stroke="#eab308" stroke-width="1" opacity="0.4"/>
+  <text x="207" y="541" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#fbbf24" text-anchor="middle" font-weight="600">JavaScript</text>
+
+  <!-- LangChain -->
+  <rect x="262" y="524" width="90" height="26" rx="6" fill="#22c55e10"/>
+  <rect x="262" y="524" width="90" height="26" rx="6" fill="none" stroke="#22c55e" stroke-width="1" opacity="0.4"/>
+  <text x="307" y="541" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#4ade80" text-anchor="middle" font-weight="600">LangChain</text>
+
+  <!-- Ollama -->
+  <rect x="362" y="524" width="70" height="26" rx="6" fill="#8b5cf610"/>
+  <rect x="362" y="524" width="70" height="26" rx="6" fill="none" stroke="#8b5cf6" stroke-width="1" opacity="0.4"/>
+  <text x="397" y="541" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#a78bfa" text-anchor="middle" font-weight="600">Ollama</text>
+
+  <!-- CrewAI -->
+  <rect x="442" y="524" width="68" height="26" rx="6" fill="#ec489910"/>
+  <rect x="442" y="524" width="68" height="26" rx="6" fill="none" stroke="#ec4899" stroke-width="1" opacity="0.4"/>
+  <text x="476" y="541" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#f472b6" text-anchor="middle" font-weight="600">CrewAI</text>
+
+  <!-- RAG -->
+  <rect x="520" y="524" width="52" height="26" rx="6" fill="#06b6d410"/>
+  <rect x="520" y="524" width="52" height="26" rx="6" fill="none" stroke="#06b6d4" stroke-width="1" opacity="0.4"/>
+  <text x="546" y="541" font-family="Inter, system-ui, sans-serif" font-size="12" fill="#22d3ee" text-anchor="middle" font-weight="600">RAG</text>
+
+  <!-- Footer derecha: dominio -->
+  <text x="1120" y="510" font-family="Inter, system-ui, sans-serif" font-size="15" fill="#334155" text-anchor="end">gepres.github.io</text>
+  <text x="1120" y="532" font-family="Inter, system-ui, sans-serif" font-size="13" fill="#1e40af" text-anchor="end">/mcp-learning-app</text>
+
+  <!-- Línea decorativa inferior -->
+  <rect x="0" y="627" width="1200" height="3" fill="url(#titleGrad)" opacity="0.5"/>
+</svg>

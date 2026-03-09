@@ -138,7 +138,7 @@ export default function LessonPage({
             <MarkdownRenderer content={lesson.content} />
           </div>
 
-          {/* ── CODE TABS (solo para lecciones con codeExamples) ── */}
+          {/* ── CODE TABS (un bloque) ── */}
           {lesson.codeExamples && (
             <div className="mb-6">
               <div className="flex items-center gap-2 mb-3">
@@ -150,6 +150,19 @@ export default function LessonPage({
               <CodeTabs codeExamples={lesson.codeExamples} />
             </div>
           )}
+
+          {/* ── CODE TABS (múltiples bloques separados por lenguaje) ── */}
+          {lesson.codeExamplesGroups && lesson.codeExamplesGroups.map((group, i) => (
+            <div key={i} className="mb-6">
+              <div className="flex items-center gap-2 mb-3">
+                <Code2 size={14} style={{ color: module.colorFrom }} />
+                <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
+                  {group.label}
+                </span>
+              </div>
+              <CodeTabs codeExamples={group} />
+            </div>
+          ))}
 
           {/* ── CHECKLIST ── */}
           <div className="glass rounded-2xl p-5 mb-6">

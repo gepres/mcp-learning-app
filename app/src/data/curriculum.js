@@ -1497,6 +1497,147 @@ await server.connect(new StdioServerTransport());
 
 Has construido un sistema real que integra MCP, agentes, n8n y opcionalmente IA local.
 **Esto es exactamente lo que usan equipos profesionales en producción.**`,
+
+  rag: `# 🔍 RAG: Retrieval-Augmented Generation
+
+> **La memoria externa de los agentes de IA**
+
+## 🧠 TIC para recordar RAG
+
+### "El Estudiante con Biblioteca"
+
+> Imagina un estudiante muy inteligente (el LLM) que sabe muchísimo, pero su conocimiento tiene fecha de corte. Antes de responder un examen, puede **ir a la biblioteca** (la base de datos vectorial), **buscar los libros relevantes** (retrieval), **leerlos rápido** (contexto) y luego **escribir su respuesta** (generation).
+
+\`\`\`
+SIN RAG:  Estudiante responde solo con lo que memorizó → puede alucinar o quedar desactualizado
+CON RAG:  Estudiante busca → lee fuente → responde con evidencia → respuesta precisa
+\`\`\`
+
+**RAG = Buscar primero, responder después**
+
+---
+
+## ¿Por qué existe RAG?
+
+Los LLMs tienen **tres problemas fundamentales**:
+
+| Problema | Descripción | RAG lo resuelve |
+|----------|-------------|-----------------|
+| **Fecha de corte** | El modelo no sabe nada después de su entrenamiento | ✅ Conecta a datos actualizados |
+| **Alucinaciones** | Inventa hechos que no sabe | ✅ Ancla respuestas en documentos reales |
+| **Contexto limitado** | No puede "leer" millones de documentos | ✅ Recupera solo lo relevante |
+
+---
+
+## 🏗️ Pipeline RAG: Las 2 Fases
+
+\`\`\`
+FASE 1: INDEXACIÓN (se hace una sola vez)
+─────────────────────────────────────────
+📄 Documentos → ✂️ Chunking → 🔢 Embedding → 🗄️ Vector DB
+
+FASE 2: CONSULTA (en cada pregunta del usuario)
+───────────────────────────────────────────────
+❓ Pregunta → 🔢 Embed query → 🔍 Búsqueda similitud → 📋 top-K chunks
+                                                              │
+                                                    🤖 LLM + Contexto
+                                                              │
+                                                        💬 Respuesta
+\`\`\`
+
+---
+
+## ✂️ Chunking: el arte de cortar documentos
+
+### TIC: "Los Cubitos de Hielo"
+
+> No metes un bloque de hielo entero en un vaso: lo partes en cubitos. Si el cubo es muy grande, no cabe. Si es muy pequeño, pierde contexto.
+
+| Estrategia | Descripción | Cuándo usar |
+|------------|-------------|-------------|
+| **Fixed-size** | Cortar cada N caracteres | Textos homogéneos |
+| **Recursive** | Párrafos → oraciones → palabras | General purpose |
+| **Semantic** | Agrupar por significado similar | Alta precisión (+9% recall) |
+| **Sliding window** | Con superposición (overlap) | No perder bordes |
+
+\`\`\`python
+chunk_size = 512    # tamaño del trozo (tokens)
+chunk_overlap = 50  # tokens que se repiten entre trozos
+\`\`\`
+
+---
+
+## 🔢 Embeddings: el GPS del significado
+
+Un **embedding** transforma texto en un vector numérico que representa su *significado*.
+
+\`\`\`
+"perro"  → [0.2, 0.8, -0.1, 0.5, ...]  ← cerca de "mascota", "can"
+"avión"  → [0.9, -0.3, 0.6, -0.1, ...] ← lejos de animales
+\`\`\`
+
+### Modelos populares 2025
+
+| Modelo | Proveedor | Costo |
+|--------|-----------|-------|
+| \`nomic-embed-text\` | Ollama | 🆓 Local |
+| \`all-MiniLM-L6-v2\` | HuggingFace | 🆓 Local |
+| \`text-embedding-3-large\` | OpenAI | 💰 Pago |
+| \`voyage-3-large\` | Voyage AI | 💰 +9.74% vs OpenAI |
+
+---
+
+## 🗄️ Bases de Datos Vectoriales
+
+Almacenan y buscan embeddings por similitud semántica.
+
+\`\`\`
+🟢 Chroma   — Local, gratis, ideal para aprender
+🔵 Pinecone — Cloud managed, producción
+🟡 Weaviate — Open source, búsqueda híbrida (vector + BM25)
+🟠 Qdrant   — Open source, muy rápido
+🔴 FAISS    — Meta, en memoria, para prototipo
+\`\`\`
+
+**Búsqueda híbrida** (vectorial + BM25) = mejor cobertura y precisión que cada una sola.
+
+---
+
+## 🔄 Variantes RAG (2025–2026)
+
+| Variante | Descripción | Ventaja |
+|----------|-------------|---------|
+| **RAG Básico** | 1 búsqueda → LLM | Simple, rápido |
+| **GraphRAG** (Microsoft) | Grafo de conocimiento + vectores | Hasta 99% precisión relacional |
+| **Self-RAG** | LLM decide si necesita recuperar | Eficiente, menos llamadas |
+| **Agentic RAG** | Agente controla múltiples búsquedas | Preguntas complejas |
+| **RAPTOR** | Árbol jerárquico de resúmenes | Multi-nivel |
+| **Long RAG** | Recupera secciones completas | Preserva contexto |
+
+---
+
+## 📊 Métricas para evaluar RAG (RAGAS)
+
+\`\`\`
+Faithfulness      — ¿La respuesta se basa en el contexto recuperado?
+Answer Relevancy  — ¿La respuesta responde la pregunta?
+Context Recall    — ¿Se recuperaron los chunks correctos?
+Context Precision — ¿Los chunks recuperados son relevantes?
+\`\`\`
+
+---
+
+## 🔧 Pipeline RAG en Producción
+
+\`\`\`
+Básico:       Query → Retrieve(k=3) → LLM → Respuesta
+
+Mejorado:
+  + QUERY EXPANSION  → reformular la pregunta de varias formas
+  + HYBRID SEARCH    → vector + BM25 keyword
+  + RERANKING        → re-ordenar resultados (+10-30% precisión)
+  + PARENT-CHILD     → chunks pequeños, recupera el padre grande
+\`\`\``,
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -2067,6 +2208,327 @@ print("📄 Reporte Final:\\n", reporte)`,
           'Entiendo los 4 patrones de orquestación',
           'Sé cómo los agentes se comunican entre sí',
           'Sé cuándo usar cada tipo',
+        ],
+      },
+      {
+        id: 'rag',
+        title: 'RAG: Retrieval-Augmented Generation',
+        icon: '🔍',
+        duration: '25 min',
+        content: CONTENT.rag,
+        tic: {
+          acronym: 'RAG',
+          trigger: '¡Busca ANTES de hablar!',
+          letters: [
+            { letter: 'R', word: 'Retrieval', desc: 'Recuperar información relevante de una fuente' },
+            { letter: 'A', word: 'Augmented', desc: 'Aumentar el contexto del LLM con esa información' },
+            { letter: 'G', word: 'Generation', desc: 'Generar la respuesta fundamentada en evidencia' },
+          ],
+          analogy: 'El Estudiante con Biblioteca: antes del examen busca libros relevantes, los lee y responde con evidencia. Sin RAG, el estudiante adivina; con RAG, cita la fuente.',
+          emoji: '📚',
+        },
+        codeExamplesGroups: [
+          // ── GRUPO 1: PYTHON ──────────────────────────────────────────
+          {
+            label: '🐍 Python · LangChain + Ollama',
+            hint: 'Pipeline RAG completo en Python con modelos 100% locales (Ollama). Sin costo, sin API key.',
+            tabs: [
+              {
+                lang: 'python',
+                badge: 'Indexar',
+                install: 'pip install langchain langchain-community langchain-ollama chromadb',
+                filename: 'rag_indexar.py',
+                code: `# rag_indexar.py — FASE 1: construir la base de conocimiento
+# Requiere: ollama pull nomic-embed-text
+
+from langchain_community.document_loaders import TextLoader
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_ollama import OllamaEmbeddings
+from langchain_community.vectorstores import Chroma
+
+# 1. Cargar documento
+loader = TextLoader("mi_documento.txt", encoding="utf-8")
+docs = loader.load()
+
+# 2. Chunking: dividir con overlap para no perder contexto
+splitter = RecursiveCharacterTextSplitter(
+    chunk_size=512,      # 512 tokens por chunk
+    chunk_overlap=50,    # 50 tokens de superposición
+    separators=["\\n\\n", "\\n", ".", " "]
+)
+chunks = splitter.split_documents(docs)
+print(f"✅ {len(chunks)} chunks creados")
+
+# 3. Embeddings locales con Ollama (gratis)
+embeddings = OllamaEmbeddings(model="nomic-embed-text")
+
+# 4. Guardar en ChromaDB (vector DB local)
+vectordb = Chroma.from_documents(
+    documents=chunks,
+    embedding=embeddings,
+    persist_directory="./mi_vectordb"
+)
+print(f"✅ {vectordb._collection.count()} vectores guardados en ./mi_vectordb")`,
+              },
+              {
+                lang: 'python',
+                badge: 'Consultar',
+                install: 'pip install langchain langchain-community langchain-ollama chromadb',
+                filename: 'rag_consultar.py',
+                code: `# rag_consultar.py — FASE 2: hacer preguntas a tus documentos
+# Requiere: ollama pull llama3.2 && ollama pull nomic-embed-text
+
+from langchain_ollama import OllamaEmbeddings, OllamaLLM
+from langchain_community.vectorstores import Chroma
+from langchain.chains import RetrievalQA
+from langchain.prompts import PromptTemplate
+
+# Cargar vector DB existente
+embeddings = OllamaEmbeddings(model="nomic-embed-text")
+vectordb = Chroma(
+    persist_directory="./mi_vectordb",
+    embedding_function=embeddings
+)
+
+# LLM local con Ollama
+llm = OllamaLLM(model="llama3.2", temperature=0)
+
+# Prompt personalizado en español
+PROMPT = """Usa el contexto para responder en español.
+Si no sabes, di "No encontré información sobre eso."
+No inventes datos.
+
+Contexto: {context}
+Pregunta: {question}
+Respuesta:"""
+
+rag_chain = RetrievalQA.from_chain_type(
+    llm=llm,
+    chain_type="stuff",
+    retriever=vectordb.as_retriever(
+        search_kwargs={"k": 3}   # top 3 chunks más relevantes
+    ),
+    chain_type_kwargs={"prompt": PromptTemplate(
+        template=PROMPT,
+        input_variables=["context", "question"]
+    )},
+    return_source_documents=True
+)
+
+# Modo interactivo
+print("🤖 RAG Local activo. 'salir' para terminar.\\n")
+while True:
+    pregunta = input("❓ Pregunta: ").strip()
+    if pregunta.lower() == "salir": break
+
+    resultado = rag_chain.invoke({"query": pregunta})
+    print(f"\\n💬 {resultado['result']}")
+    print(f"\\n📚 Basado en {len(resultado['source_documents'])} fragmentos\\n")`,
+              },
+              {
+                lang: 'python',
+                badge: 'Reranker',
+                install: 'pip install langchain langchain-community sentence-transformers',
+                filename: 'rag_reranker.py',
+                code: `# rag_reranker.py — RAG avanzado con reranking (+10-30% precisión)
+# El reranker evalúa qué tan relevante es cada chunk para la pregunta
+# y re-ordena los resultados antes de pasarlos al LLM.
+
+from langchain.retrievers import ContextualCompressionRetriever
+from langchain.retrievers.document_compressors import CrossEncoderReranker
+from langchain_community.cross_encoders import HuggingFaceCrossEncoder
+from langchain_ollama import OllamaEmbeddings, OllamaLLM
+from langchain_community.vectorstores import Chroma
+from langchain.chains import RetrievalQA
+
+# Cargar vector DB
+embeddings = OllamaEmbeddings(model="nomic-embed-text")
+vectordb = Chroma(
+    persist_directory="./mi_vectordb",
+    embedding_function=embeddings
+)
+
+# Reranker: modelo cross-encoder (evalúa relevancia par query-chunk)
+reranker = CrossEncoderReranker(
+    model=HuggingFaceCrossEncoder(
+        model_name="cross-encoder/ms-marco-MiniLM-L-6-v2"
+    ),
+    top_n=3  # quedarse con los 3 mejores tras reranquear
+)
+
+# Estrategia: recuperar 10 candidatos, reranquear a top 3
+retriever_base = vectordb.as_retriever(search_kwargs={"k": 10})
+retriever_mejorado = ContextualCompressionRetriever(
+    base_compressor=reranker,
+    base_retriever=retriever_base
+)
+
+# Cadena RAG con retriever mejorado
+llm = OllamaLLM(model="llama3.2", temperature=0)
+rag_mejorado = RetrievalQA.from_chain_type(
+    llm=llm,
+    retriever=retriever_mejorado,
+    return_source_documents=True
+)
+
+resultado = rag_mejorado.invoke({"query": "¿Cuál es el tema principal?"})
+print(resultado["result"])`,
+              },
+            ],
+          },
+          // ── GRUPO 2: JAVASCRIPT ──────────────────────────────────────
+          {
+            label: '⚡ JavaScript · LangChain.js + Ollama',
+            hint: 'Pipeline RAG completo en JavaScript con modelos 100% locales (Ollama). Sin costo, sin API key.',
+            tabs: [
+              {
+                lang: 'javascript',
+                badge: 'Indexar',
+                install: 'npm install langchain @langchain/community @langchain/ollama chromadb',
+                filename: 'rag_indexar.js',
+                code: `// rag_indexar.js — FASE 1: construir la base de conocimiento
+// Requiere: ollama pull nomic-embed-text
+
+import { TextLoader } from "langchain/document_loaders/fs/text"
+import { RecursiveCharacterTextSplitter } from "langchain/text_splitter"
+import { OllamaEmbeddings } from "@langchain/ollama"
+import { Chroma } from "@langchain/community/vectorstores/chroma"
+
+// 1. Cargar documento
+const loader = new TextLoader("./mi_documento.txt")
+const docs = await loader.load()
+
+// 2. Chunking con overlap para no perder contexto en los bordes
+const splitter = new RecursiveCharacterTextSplitter({
+  chunkSize: 512,       // 512 caracteres por chunk
+  chunkOverlap: 50,     // 50 caracteres de superposición
+  separators: ["\\n\\n", "\\n", ".", " "]
+})
+const chunks = await splitter.splitDocuments(docs)
+console.log(\`✅ \${chunks.length} chunks creados\`)
+
+// 3. Embeddings locales con Ollama (gratis, sin API key)
+const embeddings = new OllamaEmbeddings({ model: "nomic-embed-text" })
+
+// 4. Guardar en ChromaDB (vector DB local)
+const vectordb = await Chroma.fromDocuments(chunks, embeddings, {
+  collectionName: "mi-coleccion",
+  url: "http://localhost:8000",
+})
+
+const count = await vectordb.collection.count()
+console.log(\`✅ \${count} vectores guardados en ChromaDB\`)`,
+              },
+              {
+                lang: 'javascript',
+                badge: 'Consultar',
+                install: 'npm install langchain @langchain/community @langchain/ollama chromadb',
+                filename: 'rag_consultar.js',
+                code: `// rag_consultar.js — FASE 2: hacer preguntas a tus documentos
+// Requiere: ollama pull llama3.2 && ollama pull nomic-embed-text
+
+import { OllamaEmbeddings, Ollama } from "@langchain/ollama"
+import { Chroma } from "@langchain/community/vectorstores/chroma"
+import { RetrievalQAChain } from "langchain/chains"
+import { PromptTemplate } from "@langchain/core/prompts"
+import * as readline from "node:readline/promises"
+
+// Cargar vector DB existente
+const embeddings = new OllamaEmbeddings({ model: "nomic-embed-text" })
+const vectordb = await Chroma.fromExistingCollection(embeddings, {
+  collectionName: "mi-coleccion",
+  url: "http://localhost:8000",
+})
+
+// LLM local con Ollama
+const llm = new Ollama({ model: "llama3.2", temperature: 0 })
+
+// Prompt personalizado en español
+const prompt = PromptTemplate.fromTemplate(\`
+Usa el contexto para responder en español.
+Si no sabes, di "No encontré información sobre eso."
+No inventes datos.
+
+Contexto: {context}
+Pregunta: {question}
+Respuesta:\`)
+
+// Cadena RAG
+const ragChain = RetrievalQAChain.fromLLM(llm, vectordb.asRetriever(3), {
+  prompt,
+  returnSourceDocuments: true,
+})
+
+// Modo interactivo
+const rl = readline.createInterface({ input: process.stdin, output: process.stdout })
+console.log("🤖 RAG Local activo. Escribe 'salir' para terminar.\\n")
+
+while (true) {
+  const pregunta = await rl.question("❓ Pregunta: ")
+  if (pregunta.trim().toLowerCase() === "salir") { rl.close(); break }
+
+  const resultado = await ragChain.invoke({ query: pregunta })
+  console.log(\`\\n💬 \${resultado.text}\`)
+  console.log(\`\\n📚 Basado en \${resultado.sourceDocuments.length} fragmentos\\n\`)
+}`,
+              },
+              {
+                lang: 'javascript',
+                badge: 'Reranker',
+                install: 'npm install langchain @langchain/community @langchain/ollama chromadb cohere-ai',
+                filename: 'rag_reranker.js',
+                code: `// rag_reranker.js — RAG avanzado con reranking (+10-30% precisión)
+// El reranker evalúa qué tan relevante es cada chunk para la pregunta
+// y reordena los resultados antes de pasarlos al LLM.
+
+import { OllamaEmbeddings, Ollama } from "@langchain/ollama"
+import { Chroma } from "@langchain/community/vectorstores/chroma"
+import { ContextualCompressionRetriever } from "langchain/retrievers/contextual_compression"
+import { CohereRerank } from "@langchain/cohere"
+import { RetrievalQAChain } from "langchain/chains"
+
+// Cargar vector DB
+const embeddings = new OllamaEmbeddings({ model: "nomic-embed-text" })
+const vectordb = await Chroma.fromExistingCollection(embeddings, {
+  collectionName: "mi-coleccion",
+  url: "http://localhost:8000",
+})
+
+// Reranker con Cohere (gratis con plan trial)
+const reranker = new CohereRerank({
+  apiKey: process.env.COHERE_API_KEY,
+  topN: 3,
+  model: "rerank-multilingual-v3.0",
+})
+
+// Estrategia: recuperar 10 candidatos → reranquear a top 3
+const retrieverBase = vectordb.asRetriever(10)
+const retrieverMejorado = new ContextualCompressionRetriever({
+  baseCompressor: reranker,
+  baseRetriever: retrieverBase,
+})
+
+// Cadena RAG con retriever mejorado
+const llm = new Ollama({ model: "llama3.2", temperature: 0 })
+const ragMejorado = RetrievalQAChain.fromLLM(llm, retrieverMejorado, {
+  returnSourceDocuments: true,
+})
+
+const resultado = await ragMejorado.invoke({
+  query: "¿Cuál es el tema principal del documento?"
+})
+console.log("💬", resultado.text)`,
+              },
+            ],
+          },
+        ],
+        checklist: [
+          'Entiendo las 2 fases del pipeline RAG (indexación y consulta)',
+          'Sé qué es chunking y por qué importa el chunk_overlap',
+          'Entiendo qué son los embeddings y cómo representan significado',
+          'Conozco al menos 3 bases de datos vectoriales',
+          'Distingo RAG Básico de GraphRAG, Self-RAG y Agentic RAG',
+          'Ejecuté el código de indexación y consulta con Ollama',
         ],
       },
       {
@@ -2801,7 +3263,14 @@ export const GLOSSARY = [
   { term: 'Tool Calling / Function Calling', category: 'Core', def: 'La capacidad de un LLM de decidir cuándo llamar a una función externa y con qué parámetros.' },
   { term: 'ReAct', category: 'Agentes', def: 'Paradigma de agentes: Reasoning + Acting. El agente piensa (Thought) → actúa (Action) → observa (Observation) → repite.' },
   { term: 'LLM (Large Language Model)', category: 'Core', def: 'El modelo de lenguaje grande, el "cerebro" de los sistemas de IA. Ejemplos: GPT-4, Claude, Gemini, Llama.' },
-  { term: 'RAG (Retrieval-Augmented Generation)', category: 'Técnica', def: 'Técnica para dar a un LLM acceso a documentos específicos. El agente busca información relevante y la incluye en su contexto.' },
+  { term: 'RAG (Retrieval-Augmented Generation)', category: 'Técnica', def: 'Técnica que combina búsqueda de documentos con generación de texto. Pipeline: Documentos → Chunking → Embeddings → Vector DB → Retrieval → LLM → Respuesta. TIC: "El Estudiante con Biblioteca" — busca primero, responde después.' },
+  { term: 'Chunking', category: 'RAG', def: 'Dividir documentos en trozos (chunks) antes de crear embeddings. El chunk_size y chunk_overlap determinan la calidad del RAG. TIC: "Los Cubitos de Hielo" — ni muy grandes ni muy pequeños.' },
+  { term: 'Embedding', category: 'RAG', def: 'Representación numérica (vector) del significado de un texto. Textos semánticamente similares tienen vectores parecidos. TIC: "El GPS del Significado" — coordenadas en el mapa de ideas.' },
+  { term: 'Vector DB (Base de Datos Vectorial)', category: 'RAG', def: 'Base de datos especializada en almacenar y buscar vectores por similitud. Ejemplos: Chroma (local/gratis), Pinecone (cloud), Weaviate, Qdrant, FAISS.' },
+  { term: 'Reranker', category: 'RAG', def: 'Modelo que re-evalúa y reordena los chunks recuperados por relevancia real con la pregunta. Mejora la precisión del RAG un 10-30% adicional.' },
+  { term: 'Búsqueda Híbrida (Hybrid Search)', category: 'RAG', def: 'Combina búsqueda vectorial (semántica) con búsqueda por palabras clave (BM25). Mejor cobertura que cada una sola.' },
+  { term: 'GraphRAG', category: 'RAG', def: 'Variante de RAG creada por Microsoft que usa grafos de conocimiento para capturar relaciones entre entidades. Precisión hasta 99% en consultas relacionales complejas.' },
+  { term: 'Agentic RAG', category: 'RAG', def: 'RAG controlado por un agente autónomo que decide cuándo recuperar, de qué fuentes y cuántas iteraciones hacer. Útil para preguntas complejas multi-paso.' },
   { term: 'LangChain', category: 'Framework', def: 'Framework de Python/JavaScript para construir aplicaciones con LLMs. Facilita encadenar llamadas a modelos con herramientas y memoria.' },
   { term: 'LangGraph', category: 'Framework', def: 'Extensión de LangChain para construir agentes más complejos como grafos de estados con lógica condicional.' },
   { term: 'CrewAI', category: 'Framework', def: 'Framework para crear "equipos" de agentes donde cada uno tiene un rol especializado. Ideal para pipelines multi-agente.' },

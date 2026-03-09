@@ -134,15 +134,47 @@ ejecutor = AgentExecutor(agent=agente, tools=herramientas, verbose=True)
 resultado = ejecutor.invoke({"input": "tu pregunta"})
 ```
 
-### Patrón 2: RAG simple
+### Patrón 2: RAG completo (local, sin costo)
 ```python
-from langchain_community.vectorstores import FAISS
-from langchain_anthropic import AnthropicEmbeddings
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_ollama import OllamaEmbeddings, OllamaLLM
+from langchain_community.vectorstores import Chroma
 from langchain.chains import RetrievalQA
 
-vectorstore = FAISS.from_texts(documentos, AnthropicEmbeddings())
-qa_chain = RetrievalQA.from_chain_type(llm=llm, retriever=vectorstore.as_retriever())
-respuesta = qa_chain.invoke({"query": "tu pregunta"})
+# Instalar: pip install langchain langchain-community langchain-ollama chromadb
+# Ollama: ollama pull nomic-embed-text && ollama pull llama3.2
+
+# INDEXAR (una vez)
+splitter = RecursiveCharacterTextSplitter(chunk_size=512, chunk_overlap=50)
+chunks = splitter.split_documents(docs)
+embeddings = OllamaEmbeddings(model="nomic-embed-text")
+vectordb = Chroma.from_documents(chunks, embeddings, persist_directory="./vectordb")
+
+# CONSULTAR (cada vez)
+vectordb = Chroma(persist_directory="./vectordb", embedding_function=embeddings)
+rag = RetrievalQA.from_chain_type(
+    llm=OllamaLLM(model="llama3.2"),
+    retriever=vectordb.as_retriever(search_kwargs={"k": 3}),
+    return_source_documents=True
+)
+resultado = rag.invoke({"query": "tu pregunta"})
+print(resultado["result"])
+```
+
+### Patrón 2b: RAG con reranker (+10-30% precisión)
+```python
+from langchain.retrievers import ContextualCompressionRetriever
+from langchain.retrievers.document_compressors import CrossEncoderReranker
+from langchain_community.cross_encoders import HuggingFaceCrossEncoder
+
+reranker = CrossEncoderReranker(
+    model=HuggingFaceCrossEncoder(model_name="cross-encoder/ms-marco-MiniLM-L-6-v2"),
+    top_n=3
+)
+retriever_mejorado = ContextualCompressionRetriever(
+    base_compressor=reranker,
+    base_retriever=vectordb.as_retriever(search_kwargs={"k": 10})
+)
 ```
 
 ### Patrón 3: MCP Server mínimo
@@ -167,6 +199,10 @@ await server.connect(new StdioServerTransport());
 | Arquitectura MCP | **IHDU**: Inicio, Handshake, Descubrimiento, Uso |
 | IA Local | **POLI**: Privado, Offline, Libre, Instantáneo |
 | Todo el ecosistema | **MFPHE**: Modelo, Framework, Protocolo, Herramienta, Ejecución |
+| ¿Qué es RAG? | **"El Estudiante con Biblioteca"**: Busca → Lee → Responde |
+| Pipeline RAG | **CEVG**: Chunking → Embedding → Vector DB → Generate |
+| Chunking | **"Los Cubitos de Hielo"**: ni muy grande ni muy pequeño |
+| Embeddings | **"El GPS del Significado"**: texto → coordenadas de significado |
 
 ---
 

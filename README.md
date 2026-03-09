@@ -29,9 +29,11 @@ NIVEL 2 — MCP EN PROFUNDIDAD
 NIVEL 3 — AGENTES
   └── 03_agentes/
        ├── tipos-de-agentes.md
+       ├── rag-retrieval-augmented-generation.md  ← NUEVO
        ├── como-se-conectan.md
        ├── herramientas-y-contexto.md
-       └── practica_02_agente-con-herramientas/
+       ├── practica_02_agente-con-herramientas/
+       └── practica_rag/                          ← NUEVO
 
 NIVEL 4 — AUTOMATIZACIÓN CON N8N
   └── 04_n8n/

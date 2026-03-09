@@ -90,7 +90,22 @@ Un conjunto de reglas que define cómo se comunican dos sistemas. MCP es un prot
 ## R
 
 **RAG (Retrieval-Augmented Generation)**
-Técnica para dar a un LLM acceso a documentos específicos. El agente busca información relevante y la incluye en su contexto antes de responder.
+Técnica para dar a un LLM acceso a documentos específicos. El agente busca información relevante y la incluye en su contexto antes de responder. Pipeline: Documentos → Chunking → Embeddings → Vector DB → Retrieval → LLM → Respuesta. Ver módulo completo: `03_agentes/02_rag-retrieval-augmented-generation.md`
+
+**Reranker**
+Modelo que evalúa y re-ordena los documentos recuperados por un RAG según su relevancia real con la pregunta. Mejora la precisión un 10-30% adicional.
+
+**Retriever**
+Componente del sistema RAG que busca y devuelve los chunks más relevantes de la base vectorial dada una consulta.
+
+**RAG Híbrido**
+Combinación de búsqueda vectorial (semántica) con búsqueda por palabras clave (BM25). Mejora la cobertura y precisión respecto a usar solo una.
+
+**GraphRAG**
+Variante de RAG desarrollada por Microsoft que usa grafos de conocimiento para capturar relaciones entre entidades. Permite consultas multi-hop complejas con hasta 99% de precisión.
+
+**Agentic RAG**
+RAG controlado por un agente autónomo que decide dinámicamente cuándo recuperar, de qué fuentes, y cuántas iteraciones hacer. Útil para preguntas complejas.
 
 ---
 

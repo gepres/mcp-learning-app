@@ -5,7 +5,10 @@
       "Bash(npm run:*)",
       "WebFetch(domain:github.com)",
       "Bash(curl:*)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebSearch",
+      "Bash(grep:*)",
+      "Bash(node:*)"
     ]
   }
 }
