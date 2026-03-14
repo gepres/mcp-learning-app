@@ -360,13 +360,98 @@ Prompts predefinidos reutilizables que el servidor ofrece al usuario.
 
 ## Primitivas del Cliente (menos conocidas, muy útiles)
 
-### 🎲 Sampling
-El servidor puede **pedirle al LLM que genere texto** a través del cliente. El servidor no necesita su propio LLM.
+### 🎲 Sampling — El poder oculto de MCP
+
+**Sampling** es una de las ideas más elegantes del protocolo: permite que un servidor MCP tome prestada la inteligencia del LLM que ya está corriendo en el cliente, sin necesitar su propia API key ni su propio modelo.
+
+#### El problema que resuelve
+
+Sin Sampling, si un servidor MCP quisiera "razonar" o "generar texto", necesitaría:
+- Su propia API key (OpenAI, Anthropic, etc.)
+- Su propio código para llamar al LLM
+- Gestionar sus propios costos de tokens
+
+Eso rompe la arquitectura. **Sampling lo simplifica radicalmente.**
+
+#### Flujo paso a paso
+
 \`\`\`
-Server → Client: "Genera un resumen de estos datos"
-Client → LLM: [petición de completion]
-LLM → Client → Server: "El resumen es..."
+1. Usuario activa algo
+   └─→ LLM llama a una herramienta del servidor MCP
+           (ej: "resumir_documento")
+
+2. Servidor recibe la tarea
+   └─→ En lugar de tener su propio modelo, envía una
+       solicitud de sampling DE VUELTA al cliente:
+       "Oye cliente, ¿puedes pedirle al LLM que genere este texto?"
+
+3. Cliente LLM genera
+   └─→ Claude recibe la solicitud interna,
+       produce el texto y lo devuelve al servidor
+
+4. Servidor continúa su lógica normal
+   └─→ Guarda, procesa o devuelve el texto al usuario
 \`\`\`
+
+#### Diagrama de flujo
+
+\`\`\`
+Usuario → Host (Claude) → Servidor MCP
+                              ↓
+                    "necesito generar texto"
+                              ↓
+              Servidor → Cliente (sampling request)
+                              ↓
+                    Cliente → LLM (completion)
+                              ↓
+              LLM → Cliente → Servidor (texto generado)
+                              ↓
+                    Servidor continúa su tarea
+\`\`\`
+
+#### Por qué es poderoso
+
+| Sin Sampling | Con Sampling |
+|---|---|
+| Servidor necesita API key propia | Reutiliza el LLM del cliente |
+| Cada servidor gestiona sus costos | Costos centralizados en el host |
+| Complejidad duplicada | Servidor simple y ligero |
+| Atado a un modelo específico | Usa cualquier modelo que tenga el cliente |
+
+> **Truco mnemotécnico — "El becario inteligente":**
+> El servidor MCP es como un becario que sabe hacer muchas cosas pero no puede "pensar" solo. Cuando necesita inteligencia, le dice a su jefe (el cliente): _"¿Puedes preguntarle a Claude esto?"_. El jefe le trae la respuesta y el becario continúa con su tarea.
+
+#### Ejemplo concreto: Gestor de tareas
+
+Imagina un servidor MCP de gestión de tareas. Cuando creas una tarea sin descripción:
+
+\`\`\`json
+// Servidor envía sampling request al cliente
+{
+  "method": "sampling/createMessage",
+  "params": {
+    "messages": [{
+      "role": "user",
+      "content": "Genera una descripción breve para la tarea: 'revisar PR de autenticación'"
+    }],
+    "maxTokens": 100
+  }
+}
+
+// LLM responde (vía cliente)
+{
+  "content": "Revisar el Pull Request #42 que implementa el sistema de autenticación JWT. Verificar seguridad, tests y cobertura de edge cases."
+}
+\`\`\`
+
+El servidor guarda esa descripción en la tarea — **sin haber tenido nunca una API key propia**.
+
+#### Cuándo se usa Sampling en la práctica
+
+- **Enriquecimiento de datos**: Un servidor de base de datos genera descripciones automáticas de registros
+- **Validación inteligente**: Un servidor de formularios detecta si los datos tienen errores lógicos
+- **Resúmenes**: Un servidor de archivos resume documentos largos antes de devolverlos
+- **Clasificación**: Un servidor de emails categoriza mensajes según su contenido
 
 ### 📁 Roots
 El cliente informa al servidor qué directorios puede acceder:
@@ -1212,14 +1297,6 @@ calcular(expresion)         → Evalúa expresiones matemáticas
 leer_archivo(ruta)          → Lee archivos de texto locales
 \`\`\`
 
-## Prerequisito: tener Ollama corriendo
-
-\`\`\`bash
-ollama pull llama3.1:8b   # Descargar el modelo (4.7GB, una sola vez)
-ollama serve               # Iniciar servidor en localhost:11434
-ollama ps                  # Verificar que esté activo
-\`\`\`
-
 ## El loop ReAct que verás en acción
 
 \`\`\`
@@ -1231,18 +1308,6 @@ Final Answer: "Machu Picchu es..."
 \`\`\`
 
 > Activa \`verbose=True\` (Python) para ver este proceso en tiempo real. En JavaScript lo ves en los logs de consola.
-
-## Instalación
-
-\`\`\`bash
-# Python:
-pip install langchain langchain-ollama wikipedia-api
-
-# JavaScript:
-npm init -y
-# Agrega "type": "module" en package.json
-npm install @langchain/ollama @langchain/langgraph @langchain/core zod
-\`\`\`
 
 ## Python vs JavaScript: diferencias clave
 
@@ -1270,7 +1335,7 @@ npm install @langchain/ollama @langchain/langgraph @langchain/core zod
 
 \`\`\`python
 # Patrón ReAct con LangChain + Ollama:
-llm = ChatOllama(model="llama3.1:8b")    # 1. Modelo local
+llm = ChatOllama(model="llama3.2:latest")    # 1. Modelo local
 
 @tool
 def mi_herramienta(param: str) -> str:   # 2. Herramientas con @tool
@@ -1287,7 +1352,7 @@ ejecutor.invoke({"input": pregunta})     # 5. Corre el agente
 
 \`\`\`javascript
 // Patrón ReAct con LangChain.js + Ollama:
-const llm = new ChatOllama({ model: "llama3.1:8b" })  // 1. Modelo local
+const llm = new ChatOllama({ model: "llama3.2:latest" })  // 1. Modelo local
 
 const miHerramienta = tool(async ({ param }) => {      // 2. Herramientas con tool()
   return resultado
@@ -1378,125 +1443,99 @@ resultado = equipo.kickoff()
 | Privacidad + sin costos cloud | Ollama + LangChain |
 | Prototipo rápido sin código | n8n + AI Agent |`,
 
-  proyectoFinal: `# 🏆 Proyecto Final: Sistema de Q&A sobre Documentos
+  proyectoFinal: `# 🏆 Proyecto Final: Sistema Q&A Local
 
-> **Integra todo lo aprendido en un proyecto real que combina MCP + n8n + IA.**
+> **Integra todo lo aprendido: MCP + Agente ReAct + Ollama, sin depender de la nube.**
 
 ## El Proyecto
 
-Un sistema de **Q&A sobre documentos de empresa** que:
-1. **MCP Server** → expone documentos al agente
-2. **Agente con Claude** → responde preguntas
-3. **n8n** → automatiza el ingreso de nuevos documentos
+Un sistema de **Q&A sobre documentos de empresa** que corre 100% en tu máquina:
+1. **MCP Server** → expone documentos y búsqueda al agente
+2. **Agente ReAct con Ollama** → razona y responde preguntas usando las herramientas MCP
+3. **Sin APIs externas** → privacidad total, sin costo por token
 
 ## Arquitectura
 
 \`\`\`
-[Nuevo documento]
+[Usuario hace una pregunta]
         │
         ▼
-[n8n detecta cambio]
+[Agente ReAct — llama3.2:latest via Ollama]
+        │  Thought: "Necesito buscar en los documentos"
+        ▼
+[MCP Server de Documentos]
+   ├── listar_documentos()
+   └── buscar_en_documentos(termino)
         │
         ▼
-[n8n procesa y extrae texto]
-        │
-[Base de Conocimiento]
-
-Cuando llega una pregunta:
-[Usuario pregunta]
+[carpeta documentos/ con archivos .txt]
         │
         ▼
-[Claude + MCP Server de Docs]
-        │
-        ▼
-[Respuesta contextualizada]
+[Respuesta contextualizada al usuario]
 \`\`\`
 
-## Parte 1: El MCP Server de Documentos
+## Parte 1: Crea los documentos de prueba
 
-\`\`\`javascript
-// servidor-docs.js
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import fs from "fs";
-import path from "path";
-
-const DOCS_DIR = "./documentos";
-const server = new Server({ name: "servidor-docs", version: "1.0.0" }, { capabilities: { tools: {} } });
-
-// Herramienta: buscar en documentos
-server.setRequestHandler(ListToolsRequestSchema, async () => ({
-  tools: [{
-    name: "buscar_en_documentos",
-    description: "Busca un término en todos los documentos de la empresa",
-    inputSchema: {
-      type: "object",
-      properties: { termino: { type: "string" } },
-      required: ["termino"]
-    }
-  }]
-}));
-
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  const { termino } = request.params.arguments;
-  const archivos = fs.readdirSync(DOCS_DIR);
-  const resultados = [];
-
-  for (const archivo of archivos) {
-    const contenido = fs.readFileSync(path.join(DOCS_DIR, archivo), "utf-8");
-    if (contenido.toLowerCase().includes(termino.toLowerCase())) {
-      const lineas = contenido.split("\\n")
-        .filter(l => l.toLowerCase().includes(termino.toLowerCase()))
-        .slice(0, 3);
-      resultados.push(\`📄 \${archivo}:\\n\${lineas.join("\\n")}\`);
-    }
-  }
-
-  return {
-    content: [{ type: "text", text: resultados.join("\\n---\\n") || "Sin resultados." }]
-  };
-});
-
-await server.connect(new StdioServerTransport());
+\`\`\`bash
+mkdir documentos
+echo "Vacaciones: 30 días al año. Solicitar con 15 días de anticipación." > documentos/rrhh.txt
+echo "Producto A: S/.150. Producto B: S/.280. Descuento >10 unidades: 15%." > documentos/precios.txt
+echo "Horario: Lunes a Viernes 9:00-18:00. Viernes: salida a las 17:00." > documentos/horarios.txt
 \`\`\`
 
-## Parte 2: Configurar Claude Code
+## Parte 2: Construye el MCP Server
+
+El código completo está en los tabs interactivos de abajo (JS o Python).
+El servidor expone **2 herramientas**: \`listar_documentos\` y \`buscar_en_documentos\`.
+
+## Parte 3: Configura en Claude Code
 
 \`\`\`json
 {
   "mcpServers": {
     "documentos-empresa": {
       "command": "node",
-      "args": ["./servidor-docs.js"]
+      "args": ["/ruta/absoluta/servidor-docs.js"]
     }
   }
 }
 \`\`\`
 
-## Parte 3: Probar Todo Junto
+> Reinicia Claude Code y verás las herramientas disponibles automáticamente.
+
+## Parte 4: Conecta el Agente ReAct con Ollama
+
+El código del agente está en los tabs interactivos de abajo (**Agente ReAct** — Python o JavaScript).
+Ambos usan \`llama3.2:latest\` y las mismas herramientas que el MCP Server.
+
+## Parte 5: Prueba el sistema completo
 
 \`\`\`
 "¿Cuántos días de vacaciones tenemos?"
-→ Claude busca en documentos y responde
+→ El agente busca en rrhh.txt y responde
 
-"¿Cuáles son los precios del Producto A?"
-→ Claude lee el manual y responde
+"¿Cuál es el precio del Producto B?"
+→ El agente encuentra precios.txt y responde
 
-"Busca todo lo relacionado con horarios"
-→ Claude usa buscar_en_documentos
+"¿Qué documentos hay disponibles?"
+→ El agente lista todos los archivos
+
+"¿A qué hora salimos los viernes?"
+→ El agente busca en horarios.txt
 \`\`\`
 
 ## ✅ Has completado el proyecto si...
 
-- [ ] El MCP Server busca en documentos
-- [ ] Claude Code responde preguntas correctamente
-- [ ] n8n ingesta nuevos documentos automáticamente
-- [ ] (Bonus) La versión local con Ollama funciona
+- [ ] La carpeta \`documentos/\` tiene al menos 3 archivos .txt
+- [ ] El MCP Server lista y busca en documentos correctamente
+- [ ] Claude Code responde preguntas usando el MCP Server
+- [ ] El agente con Ollama responde preguntas en modo local
+- [ ] El loop ReAct muestra el razonamiento paso a paso
 
 ## 🏅 ¡Felicitaciones!
 
-Has construido un sistema real que integra MCP, agentes, n8n y opcionalmente IA local.
-**Esto es exactamente lo que usan equipos profesionales en producción.**`,
+Has construido un sistema real que integra **MCP + Agentes + IA Local** sin depender de ningún servicio externo.
+**Privacidad total, costo cero, conocimiento tuyo.**`,
 
   rag: `# 🔍 RAG: Retrieval-Augmented Generation
 
@@ -1677,10 +1716,12 @@ export const MODULES = [
           emoji: '👨‍🍳',
         },
         checklist: [
-          'Puedo explicar la diferencia entre chatbot y agente',
-          'Entiendo los 4 componentes de un agente',
-          'Sé qué es el loop ReAct',
-          'Puedo dar un ejemplo real de agente',
+          'Explico la diferencia entre chatbot y agente: stateless vs stateful, un turno vs multi-turno',
+          'Identifico los 4 componentes de un agente: Cerebro (LLM), Herramientas, Memoria y Loop de razonamiento',
+          'Describo el ciclo ReAct completo: Observar → Pensar → Actuar → (repetir)',
+          'Distingo los 3 tipos de agente por autonomía: reactivo, deliberativo e híbrido',
+          'Diferencio agente único de sistema multi-agente y sé cuándo conviene cada uno',
+          'Puedo trazar cómo Claude Code actúa como agente en un caso real (leer → razonar → editar → verificar)',
         ],
       },
       {
@@ -1704,10 +1745,13 @@ export const MODULES = [
           emoji: '🍽️',
         },
         checklist: [
-          'Entiendo por qué existía el problema antes de MCP',
-          'Distingo entre Host, Client y Server',
-          'Sé qué tipos de recursos expone un MCP Server',
-          'Puedo configurar MCP en Claude Code',
+          'Explico el problema N×M que MCP resuelve y la analogía del cable USB',
+          'Distingo claramente el rol de Host, Client y Server en la arquitectura MCP',
+          'Conozco las 3 primitivas del servidor: Tools (verbos), Resources (sustantivos) y Prompts (plantillas)',
+          'Entiendo Sampling: el servidor pide al cliente que el LLM genere texto sin necesitar API key propia',
+          'Sé para qué sirve Roots y cómo implementa el principio de mínimo privilegio',
+          'Diferencio stdio (local, alta seguridad) de HTTP Streamable (remoto, requiere auth)',
+          'Puedo escribir la configuración de un MCP Server en Claude Code (mcpServers en settings.json)',
         ],
       },
       {
@@ -1730,10 +1774,11 @@ export const MODULES = [
           emoji: '🎼',
         },
         checklist: [
-          'Puedo trazar el flujo completo de una tarea',
-          'Entiendo la diferencia entre stdio y HTTP/SSE',
-          'Sé qué herramientas tiene Claude Code built-in',
-          'Sé cuándo usar agentes vs n8n vs API directa',
+          'Trazo el flujo completo de 6 pasos: usuario → planifica → ejecuta herramienta → razona → ejecuta herramienta → responde',
+          'Explico cómo Host, LLM, MCP Client y MCP Servers interactúan en el diagrama técnico',
+          'Identifico las 7 herramientas built-in de Claude Code: Read, Write, Edit, Bash, Grep, WebSearch y Agent',
+          'Sé que Claude Code puede combinar sus herramientas propias con MCP Servers externos simultáneamente',
+          'Elijo la herramienta correcta según el caso: Claude Code+MCP, n8n, API+LangChain u Ollama',
         ],
       },
     ],
@@ -2018,6 +2063,13 @@ if __name__ == "__main__":
             {
               lang: 'javascript',
               badge: 'Anthropic SDK',
+              setup: [
+                'mkdir mi-agente && cd mi-agente',
+                'npm init -y',
+                'npm pkg set type=module',
+                'npm pkg set scripts.start="node --env-file=.env tipos_agentes.js"',
+                'echo "ANTHROPIC_API_KEY=tu-api-key-aqui" > .env',
+              ],
               install: 'npm install @anthropic-ai/sdk',
               filename: 'tipos_agentes.js',
               code: `import Anthropic from "@anthropic-ai/sdk"
@@ -2104,20 +2156,44 @@ async function agenteRedactor(investigacion) {
   return r.content[0].text
 }
 
-// Pipeline: investigador → redactor (output de uno = input del otro)
+// ── LLAMADAS DE PRUEBA ────────────────────────────────────
+
+// 1. AGENTE SIMPLE — descomenta para probar
+// const respSimple = await agenteSimple("¿Qué es el protocolo MCP?")
+// console.log("🤖 Agente Simple stop_reason:", respSimple.stop_reason)
+
+// 2. AGENTE CON MEMORIA — descomenta para probar (puedes encadenar varias llamadas)
+// const r1 = await agenteConMemoria("Mi nombre es Genaro")
+// console.log("💬 Memoria 1:", r1)
+// const r2 = await agenteConMemoria("¿Cómo me llamo?")
+// console.log("💬 Memoria 2:", r2)
+
+// 3. AGENTE PLANIFICADOR — descomenta para probar
+// const resultado = await agentePlanificador("Crear una API REST con Node.js y Express")
+// console.log("✅ Resultado Planificador:\\n", resultado)
+
+// 4. MULTI-AGENTE (Pipeline secuencial) — descomenta para probar
 const tema = "Protocolo MCP y el futuro de los agentes IA"
 const investigacion = await agenteInvestigador(tema)
 const reporte = await agenteRedactor(investigacion)
 console.log("📄 Reporte Final:\\n", reporte)`,
+              run: 'npm start',
             },
             {
               lang: 'python',
               badge: 'Anthropic SDK',
-              install: 'pip install anthropic',
+              setup: [
+                'mkdir mi-agente && cd mi-agente',
+                'python -m venv venv && source venv/bin/activate',
+                'echo "ANTHROPIC_API_KEY=tu-api-key-aqui" > .env',
+              ],
+              install: 'pip install anthropic python-dotenv',
               filename: 'tipos_agentes.py',
               code: `import os
 import anthropic
+from dotenv import load_dotenv
 
+load_dotenv()
 client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
 MODEL = "claude-sonnet-4-6"
 
@@ -2200,6 +2276,7 @@ tema = "Protocolo MCP y el futuro de los agentes IA"
 investigacion = agente_investigador(tema)
 reporte = agente_redactor(investigacion)
 print("📄 Reporte Final:\\n", reporte)`,
+              run: 'python tipos_agentes.py',
             },
           ],
         },
@@ -2379,12 +2456,21 @@ print(resultado["result"])`,
           // ── GRUPO 2: JAVASCRIPT ──────────────────────────────────────
           {
             label: '⚡ JavaScript · LangChain.js + Ollama',
-            hint: 'Pipeline RAG completo en JavaScript con modelos 100% locales (Ollama). Sin costo, sin API key.',
+            hint: 'Pipeline RAG completo en JavaScript con modelos 100% locales (Ollama). Sin costo, sin API key. Orden: ejecuta Indexar primero, luego Consultar.',
             tabs: [
               {
                 lang: 'javascript',
                 badge: 'Indexar',
-                install: 'npm install langchain @langchain/community @langchain/ollama chromadb',
+                setup: [
+                  'mkdir rag-local && cd rag-local',
+                  'npm init -y',
+                  'npm pkg set type=module',
+                  'npm pkg set scripts.indexar="node rag_indexar.js" scripts.consultar="node rag_consultar.js"',
+                  'docker run -d -p 8000:8000 chromadb/chroma',
+                  'ollama pull nomic-embed-text',
+                  'echo "El protocolo MCP conecta LLMs con herramientas externas de forma estándar." > mi_documento.txt',
+                ],
+                install: 'npm install langchain @langchain/community @langchain/core @langchain/ollama chromadb',
                 filename: 'rag_indexar.js',
                 code: `// rag_indexar.js — FASE 1: construir la base de conocimiento
 // Requiere: ollama pull nomic-embed-text
@@ -2397,6 +2483,7 @@ import { Chroma } from "@langchain/community/vectorstores/chroma"
 // 1. Cargar documento
 const loader = new TextLoader("./mi_documento.txt")
 const docs = await loader.load()
+console.log(\`📄 \${docs.length} documento(s) cargado(s)\`)
 
 // 2. Chunking con overlap para no perder contexto en los bordes
 const splitter = new RecursiveCharacterTextSplitter({
@@ -2417,15 +2504,21 @@ const vectordb = await Chroma.fromDocuments(chunks, embeddings, {
 })
 
 const count = await vectordb.collection.count()
-console.log(\`✅ \${count} vectores guardados en ChromaDB\`)`,
+console.log(\`✅ \${count} vectores guardados en ChromaDB\`)
+console.log("🚀 Ahora ejecuta: npm run consultar")`,
+                run: 'npm run indexar',
               },
               {
                 lang: 'javascript',
                 badge: 'Consultar',
-                install: 'npm install langchain @langchain/community @langchain/ollama chromadb',
+                setup: [
+                  'ollama pull llama3.2',
+                  'npm run indexar',
+                ],
+                install: 'npm install langchain @langchain/community @langchain/core @langchain/ollama chromadb',
                 filename: 'rag_consultar.js',
                 code: `// rag_consultar.js — FASE 2: hacer preguntas a tus documentos
-// Requiere: ollama pull llama3.2 && ollama pull nomic-embed-text
+// Prerrequisito: haber ejecutado rag_indexar.js al menos una vez
 
 import { OllamaEmbeddings, Ollama } from "@langchain/ollama"
 import { Chroma } from "@langchain/community/vectorstores/chroma"
@@ -2439,6 +2532,7 @@ const vectordb = await Chroma.fromExistingCollection(embeddings, {
   collectionName: "mi-coleccion",
   url: "http://localhost:8000",
 })
+console.log("📚 Colección cargada desde ChromaDB")
 
 // LLM local con Ollama
 const llm = new Ollama({ model: "llama3.2", temperature: 0 })
@@ -2471,11 +2565,17 @@ while (true) {
   console.log(\`\\n💬 \${resultado.text}\`)
   console.log(\`\\n📚 Basado en \${resultado.sourceDocuments.length} fragmentos\\n\`)
 }`,
+                run: 'npm run consultar',
               },
               {
                 lang: 'javascript',
                 badge: 'Reranker',
-                install: 'npm install langchain @langchain/community @langchain/ollama chromadb cohere-ai',
+                setup: [
+                  'npm install @langchain/cohere',
+                  'echo "COHERE_API_KEY=tu-key-aqui" >> .env',
+                  'npm pkg set scripts.reranker="node --env-file=.env rag_reranker.js"',
+                ],
+                install: 'npm install langchain @langchain/community @langchain/core @langchain/ollama chromadb @langchain/cohere',
                 filename: 'rag_reranker.js',
                 code: `// rag_reranker.js — RAG avanzado con reranking (+10-30% precisión)
 // El reranker evalúa qué tan relevante es cada chunk para la pregunta
@@ -2517,7 +2617,9 @@ const ragMejorado = RetrievalQAChain.fromLLM(llm, retrieverMejorado, {
 const resultado = await ragMejorado.invoke({
   query: "¿Cuál es el tema principal del documento?"
 })
-console.log("💬", resultado.text)`,
+console.log("💬", resultado.text)
+console.log(\`📚 Fragmentos usados: \${resultado.sourceDocuments.length}\`)`,
+                run: 'npm run reranker',
               },
             ],
           },
@@ -2556,13 +2658,18 @@ console.log("💬", resultado.text)`,
             {
               lang: 'python',
               badge: 'CrewAI',
-              install: 'pip install crewai langchain-anthropic',
+              setup: [
+                'mkdir equipo-agentes && cd equipo-agentes',
+                'python -m venv venv && source venv/bin/activate',
+                'echo "ANTHROPIC_API_KEY=tu-api-key-aqui" > .env',
+              ],
+              install: 'pip install crewai langchain-anthropic python-dotenv',
               filename: 'equipo_investigacion.py',
-              code: `import os
+              code: `from dotenv import load_dotenv
 from crewai import Agent, Task, Crew, Process
 from langchain_anthropic import ChatAnthropic
 
-os.environ["ANTHROPIC_API_KEY"] = "tu-api-key"
+load_dotenv()
 llm = ChatAnthropic(model="claude-3-5-sonnet-20241022", temperature=0.1)
 
 # ── Agente 1: Investigador ──────────────────────────────────
@@ -2609,16 +2716,24 @@ equipo = Crew(
 
 resultado = equipo.kickoff(inputs={"tema": "MCP y Agentes de IA en 2025"})
 print(resultado)`,
+              run: 'python equipo_investigacion.py',
             },
             {
               lang: 'javascript',
               badge: 'Anthropic SDK',
+              setup: [
+                'mkdir equipo-agentes && cd equipo-agentes',
+                'npm init -y',
+                'npm pkg set type=module',
+                'npm pkg set scripts.start="node --env-file=.env equipo_investigacion.js"',
+                'echo "ANTHROPIC_API_KEY=tu-api-key-aqui" > .env',
+              ],
               install: 'npm install @anthropic-ai/sdk',
               filename: 'equipo_investigacion.js',
               code: `import Anthropic from "@anthropic-ai/sdk"
 
-const client = new Anthropic({ apiKey: "tu-api-key" })
-const MODEL = "claude-3-5-sonnet-20241022"
+const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+const MODEL = "claude-sonnet-4-6"
 
 // ── Agente 1: Investigador (función async con system prompt) ─
 async function agenteInvestigador(tema) {
@@ -2669,6 +2784,7 @@ async function equipoInvestigacion(tema) {
 }
 
 await equipoInvestigacion("MCP y Agentes de IA en 2025")`,
+              run: 'npm start',
             },
           ],
         },
@@ -2903,6 +3019,12 @@ console.log("\\n✅ Prueba completada")`,
             {
               lang: 'python',
               badge: 'LangChain',
+              setup: [
+                'ollama pull llama3.2:latest',
+                'ollama serve',
+                'mkdir agente-local && cd agente-local',
+                'python -m venv venv && source venv/bin/activate',
+              ],
               install: 'pip install langchain langchain-ollama wikipedia-api',
               filename: 'agente_local.py',
               code: `from langchain_ollama import ChatOllama
@@ -2912,7 +3034,7 @@ from langchain import hub
 import wikipediaapi, math
 
 # 1️⃣  Modelo local via Ollama
-llm = ChatOllama(model="llama3.1:8b", temperature=0)
+llm = ChatOllama(model="llama3.2:latest", temperature=0)
 
 # 2️⃣  Herramientas con @tool — el docstring es la descripción para el LLM
 @tool
@@ -2959,10 +3081,18 @@ while True:
         break
     respuesta = ejecutor.invoke({"input": pregunta})
     print(f"\\n✅ {respuesta['output']}")`,
+              run: 'python agente_local.py',
             },
             {
               lang: 'javascript',
               badge: 'LangChain.js',
+              setup: [
+                'ollama pull llama3.2:latest',
+                'ollama serve',
+                'mkdir agente-local && cd agente-local',
+                'npm init -y',
+                'npm pkg set type=module',
+              ],
               install: 'npm install @langchain/ollama @langchain/langgraph @langchain/core zod',
               filename: 'agente_local.js',
               code: `import { ChatOllama } from "@langchain/ollama";
@@ -2973,7 +3103,7 @@ import { readFileSync } from "fs";
 import * as readline from "readline";
 
 // 1️⃣  Modelo local via Ollama
-const llm = new ChatOllama({ model: "llama3.1:8b", temperature: 0 });
+const llm = new ChatOllama({ model: "llama3.2:latest", temperature: 0 });
 
 // 2️⃣  Herramientas — usa Zod para validar parámetros
 const buscarWikipedia = tool(
@@ -3047,11 +3177,12 @@ const preguntar = () => {
   });
 };
 preguntar();`,
+              run: 'node agente_local.js',
             },
           ],
         },
         checklist: [
-          'Ollama está corriendo y el modelo llama3.1:8b está descargado',
+          'Ollama está corriendo y el modelo llama3.2:latest está descargado',
           'Instalé todas las dependencias (langchain-ollama o @langchain/ollama)',
           'El agente conecta con Ollama sin errores',
           'Creé al menos 2 herramientas funcionales',
@@ -3110,27 +3241,35 @@ preguntar();`,
         isFinal: true,
         content: CONTENT.proyectoFinal,
         tic: {
-          acronym: 'MANCA',
-          trigger: '¡No te MANCA nada para terminar!',
+          acronym: 'MOCA',
+          trigger: '¡Tu agente MOCA lo sabe todo!',
           letters: [
-            { letter: 'M', word: 'MCP Server', desc: 'Expone los documentos de empresa' },
-            { letter: 'A', word: 'Agente Claude', desc: 'Responde preguntas con contexto' },
-            { letter: 'N', word: 'n8n', desc: 'Automatiza la ingesta de documentos' },
-            { letter: 'C', word: 'Carpeta de docs', desc: 'La base de conocimiento real' },
-            { letter: 'A', word: 'Answers', desc: 'Respuestas inteligentes al usuario' },
+            { letter: 'M', word: 'MCP Server', desc: 'Expone los documentos como herramientas' },
+            { letter: 'O', word: 'Ollama', desc: 'El modelo local que razona (llama3.2:latest)' },
+            { letter: 'C', word: 'Conocimiento', desc: 'Los archivos .txt con la info de empresa' },
+            { letter: 'A', word: 'Agente ReAct', desc: 'El loop que piensa, busca y responde' },
           ],
-          analogy: 'MANCA = la receta completa: MCP Server de documentos + Agente que responde + n8n que automatiza + Carpeta de conocimiento = sistema Q&A real.',
+          analogy: 'MOCA = la receta completa: MCP Server expone los docs, Ollama razona, Conocimiento es la carpeta de archivos, y el Agente ReAct lo conecta todo. Sin internet, sin costo.',
           emoji: '🏆',
         },
         codeExamples: {
-          hint: 'JavaScript usa el SDK de MCP directamente. Python usa FastMCP con decoradores — más simple y menos código.',
+          hint: 'Selecciona el lenguaje y luego el archivo: MCP Server (el backend de documentos) o Agente ReAct (el que razona y responde).',
           tabs: [
             {
               lang: 'javascript',
-              badge: 'MCP SDK',
-              install: 'npm install @modelcontextprotocol/sdk',
-              filename: 'servidor-docs.js',
-              code: `import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+              setup: [
+                'mkdir proyecto-qa && cd proyecto-qa',
+                'npm init -y',
+                'npm pkg set type=module',
+                'mkdir documentos',
+                'ollama pull llama3.2:latest && ollama serve',
+              ],
+              files: [
+                {
+                  badge: 'MCP SDK',
+                  install: 'npm install @modelcontextprotocol/sdk',
+                  filename: 'servidor-docs.js',
+                  code: `import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import fs from "fs";
@@ -3145,6 +3284,11 @@ const server = new Server(
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
   tools: [
     {
+      name: "listar_documentos",
+      description: "Lista todos los documentos disponibles",
+      inputSchema: { type: "object", properties: {} }
+    },
+    {
       name: "buscar_en_documentos",
       description: "Busca un término en todos los documentos de la empresa",
       inputSchema: {
@@ -3153,11 +3297,6 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         required: ["termino"]
       }
     },
-    {
-      name: "listar_documentos",
-      description: "Lista todos los documentos disponibles",
-      inputSchema: { type: "object", properties: {} }
-    }
   ]
 }));
 
@@ -3175,7 +3314,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { termino } = args;
     const archivos = fs.readdirSync(DOCS_DIR);
     const resultados = [];
-
     for (const archivo of archivos) {
       const contenido = fs.readFileSync(path.join(DOCS_DIR, archivo), "utf-8");
       if (contenido.toLowerCase().includes(termino.toLowerCase())) {
@@ -3194,13 +3332,98 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 });
 
 await server.connect(new StdioServerTransport());`,
+                  run: 'node servidor-docs.js',
+                },
+                {
+                  badge: 'Agente ReAct',
+                  install: 'npm install @langchain/ollama @langchain/langgraph @langchain/core zod',
+                  filename: 'agente_qa.js',
+                  code: `import { ChatOllama } from "@langchain/ollama";
+import { tool } from "@langchain/core/tools";
+import { createReactAgent } from "@langchain/langgraph/prebuilt";
+import { z } from "zod";
+import { readdirSync, readFileSync } from "fs";
+import { join } from "path";
+import * as readline from "readline";
+
+const DOCS_DIR = "./documentos";
+
+const listarDocumentos = tool(
+  async () => {
+    const archivos = readdirSync(DOCS_DIR).filter(f => f.endsWith(".txt"));
+    return archivos.length
+      ? archivos.map(f => \`📄 \${f}\`).join("\\n")
+      : "Sin documentos.";
+  },
+  {
+    name: "listar_documentos",
+    description: "Lista todos los documentos disponibles en la base de conocimiento.",
+    schema: z.object({}),
+  }
+);
+
+const buscarEnDocumentos = tool(
+  async ({ termino }) => {
+    const archivos = readdirSync(DOCS_DIR).filter(f => f.endsWith(".txt"));
+    const resultados = [];
+    for (const archivo of archivos) {
+      const contenido = readFileSync(join(DOCS_DIR, archivo), "utf-8");
+      if (contenido.toLowerCase().includes(termino.toLowerCase())) {
+        const lineas = contenido.split("\\n")
+          .filter(l => l.toLowerCase().includes(termino.toLowerCase()))
+          .slice(0, 3);
+        resultados.push(\`📄 \${archivo}:\\n\${lineas.join("\\n")}\`);
+      }
+    }
+    return resultados.join("\\n---\\n") || \`Sin resultados para: "\${termino}"\`;
+  },
+  {
+    name: "buscar_en_documentos",
+    description: "Busca un término en todos los documentos de la empresa.",
+    schema: z.object({ termino: z.string().describe("Término a buscar") }),
+  }
+);
+
+const llm = new ChatOllama({ model: "llama3.2:latest", temperature: 0 });
+const agente = createReactAgent({ llm, tools: [listarDocumentos, buscarEnDocumentos] });
+
+const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+console.log("🤖 Q&A Local activo. Escribe 'salir' para terminar.");
+
+const preguntar = () => {
+  rl.question("\\n👤 Tú: ", async (pregunta) => {
+    pregunta = pregunta.trim();
+    if (!pregunta || ["salir", "exit"].includes(pregunta.toLowerCase())) {
+      console.log("👋 ¡Hasta luego!"); rl.close(); return;
+    }
+    try {
+      const r = await agente.invoke({ messages: [{ role: "user", content: pregunta }] });
+      console.log(\`\\n✅ \${r.messages.at(-1).content}\`);
+    } catch (e) {
+      console.error(\`❌ Error: \${e.message}\`);
+    }
+    preguntar();
+  });
+};
+preguntar();`,
+                  run: 'node agente_qa.js',
+                },
+              ],
             },
             {
               lang: 'python',
-              badge: 'FastMCP',
-              install: 'pip install mcp',
-              filename: 'servidor_docs.py',
-              code: `from mcp.server.fastmcp import FastMCP
+              setup: [
+                'mkdir proyecto-qa && cd proyecto-qa',
+                'python -m venv venv && source venv/bin/activate',
+                'mkdir documentos',
+                'ollama pull llama3.2:latest && ollama serve',
+              ],
+              files: [
+                {
+                  badge: 'FastMCP',
+                  install: 'pip install mcp',
+                  filename: 'servidor_docs.py',
+                  code: `from mcp.server.fastmcp import FastMCP
 from pathlib import Path
 
 DOCS_DIR = Path("./documentos")
@@ -3220,7 +3443,6 @@ def buscar_en_documentos(termino: str) -> str:
     Devuelve las líneas que contienen el término con el nombre del archivo.
     """
     resultados = []
-
     for archivo in DOCS_DIR.glob("*.txt"):
         contenido = archivo.read_text(encoding="utf-8")
         if termino.lower() in contenido.lower():
@@ -3229,11 +3451,57 @@ def buscar_en_documentos(termino: str) -> str:
                 if termino.lower() in l.lower()
             ][:3]
             resultados.append(f"📄 {archivo.name}:\\n" + "\\n".join(lineas))
-
     return "\\n---\\n".join(resultados) if resultados else f'Sin resultados para: "{termino}"'
 
 if __name__ == "__main__":
     mcp.run()`,
+                  run: 'python servidor_docs.py',
+                },
+                {
+                  badge: 'Agente ReAct',
+                  install: 'pip install langchain langchain-ollama',
+                  filename: 'agente_qa.py',
+                  code: `from langchain_ollama import ChatOllama
+from langchain.agents import create_react_agent, AgentExecutor
+from langchain.tools import tool
+from langchain import hub
+from pathlib import Path
+
+DOCS_DIR = Path("./documentos")
+
+@tool
+def listar_documentos() -> str:
+    """Lista todos los documentos disponibles en la base de conocimiento."""
+    archivos = list(DOCS_DIR.glob("*.txt"))
+    return "\\n".join([f"📄 {a.name}" for a in archivos]) if archivos else "Sin documentos."
+
+@tool
+def buscar_en_documentos(termino: str) -> str:
+    """Busca un término en todos los documentos de la empresa."""
+    resultados = []
+    for archivo in DOCS_DIR.glob("*.txt"):
+        contenido = archivo.read_text(encoding="utf-8")
+        if termino.lower() in contenido.lower():
+            lineas = [l for l in contenido.split("\\n") if termino.lower() in l.lower()][:3]
+            resultados.append(f"📄 {archivo.name}:\\n" + "\\n".join(lineas))
+    return "\\n---\\n".join(resultados) if resultados else f'Sin resultados para: "{termino}"'
+
+llm = ChatOllama(model="llama3.2:latest", temperature=0)
+herramientas = [listar_documentos, buscar_en_documentos]
+prompt = hub.pull("hwchase17/react")
+agente = create_react_agent(llm=llm, tools=herramientas, prompt=prompt)
+ejecutor = AgentExecutor(agent=agente, tools=herramientas, verbose=True, max_iterations=5)
+
+print("🤖 Q&A Local activo. Escribe 'salir' para terminar.")
+while True:
+    pregunta = input("\\n👤 Tú: ").strip()
+    if pregunta.lower() in ["salir", "exit"]:
+        break
+    respuesta = ejecutor.invoke({"input": pregunta})
+    print(f"\\n✅ {respuesta['output']}")`,
+                  run: 'python agente_qa.py',
+                },
+              ],
             },
           ],
         },
@@ -3241,9 +3509,9 @@ if __name__ == "__main__":
           'Creé la carpeta documentos/ con al menos 3 archivos .txt',
           'El MCP Server lista documentos correctamente',
           'El MCP Server busca por término y devuelve resultados',
-          'Claude Code está configurado y responde preguntas sobre los documentos',
-          'n8n tiene un workflow que detecta nuevos archivos y los procesa',
-          '(Bonus) La versión con Ollama funciona sin internet',
+          'Claude Code está configurado con el MCP Server y responde preguntas',
+          'El agente con Ollama (llama3.2:latest) responde en modo local',
+          'El loop ReAct muestra el razonamiento paso a paso en consola',
           '¡Proyecto final completado! 🎉',
         ],
       },

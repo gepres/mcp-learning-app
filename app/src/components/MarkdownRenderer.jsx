@@ -7,13 +7,13 @@ import { Copy, Check } from 'lucide-react'
 import { useTheme } from '../context/ThemeContext'
 
 const LANG_BADGE = {
-  javascript: { label: '🟨 JavaScript', color: '#fbbf24', bg: 'rgba(251,191,36,0.12)', border: 'rgba(251,191,36,0.3)' },
-  js:         { label: '🟨 JavaScript', color: '#fbbf24', bg: 'rgba(251,191,36,0.12)', border: 'rgba(251,191,36,0.3)' },
-  python:     { label: '🐍 Python',     color: '#4ade80', bg: 'rgba(74,222,128,0.12)',  border: 'rgba(74,222,128,0.3)' },
-  py:         { label: '🐍 Python',     color: '#4ade80', bg: 'rgba(74,222,128,0.12)',  border: 'rgba(74,222,128,0.3)' },
-  json:       { label: '{ } JSON',      color: '#fb923c', bg: 'rgba(251,146,60,0.12)',  border: 'rgba(251,146,60,0.3)' },
-  bash:       { label: '$ bash',        color: '#94a3b8', bg: 'rgba(148,163,184,0.08)', border: 'rgba(148,163,184,0.2)' },
-  yaml:       { label: '⚙️ YAML',       color: '#c084fc', bg: 'rgba(192,132,252,0.10)', border: 'rgba(192,132,252,0.3)' },
+  javascript: { devicon: 'devicon-javascript-plain colored', label: 'JavaScript', color: '#fbbf24', bg: 'rgba(251,191,36,0.12)', border: 'rgba(251,191,36,0.3)' },
+  js:         { devicon: 'devicon-javascript-plain colored', label: 'JavaScript', color: '#fbbf24', bg: 'rgba(251,191,36,0.12)', border: 'rgba(251,191,36,0.3)' },
+  python:     { devicon: 'devicon-python-plain colored',     label: 'Python',     color: '#4ade80', bg: 'rgba(74,222,128,0.12)',  border: 'rgba(74,222,128,0.3)' },
+  py:         { devicon: 'devicon-python-plain colored',     label: 'Python',     color: '#4ade80', bg: 'rgba(74,222,128,0.12)',  border: 'rgba(74,222,128,0.3)' },
+  json:       { devicon: 'devicon-json-plain colored',       label: 'JSON',       color: '#fb923c', bg: 'rgba(251,146,60,0.12)',  border: 'rgba(251,146,60,0.3)' },
+  bash:       { devicon: 'devicon-bash-plain',               label: 'bash',       color: '#94a3b8', bg: 'rgba(148,163,184,0.08)', border: 'rgba(148,163,184,0.2)' },
+  yaml:       { devicon: 'devicon-yaml-plain colored',       label: 'YAML',       color: '#c084fc', bg: 'rgba(192,132,252,0.10)', border: 'rgba(192,132,252,0.3)' },
 }
 
 function CodeBlock({ language, children }) {
@@ -40,8 +40,12 @@ function CodeBlock({ language, children }) {
             background: badge.bg,
             border: `1px solid ${badge.border}`,
             fontWeight: 700,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.35rem',
           }}
         >
+          <i className={`${badge.devicon} text-sm`} />
           {badge.label}
         </span>
       ) : language ? (
