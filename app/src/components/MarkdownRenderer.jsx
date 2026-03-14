@@ -5,6 +5,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import { Copy, Check } from 'lucide-react'
 import { useTheme } from '../context/ThemeContext'
+import DiagramTabs from './DiagramTabs'
 
 const LANG_BADGE = {
   javascript: { devicon: 'devicon-javascript-plain colored', label: 'JavaScript', color: '#fbbf24', bg: 'rgba(251,191,36,0.12)', border: 'rgba(251,191,36,0.3)' },
@@ -86,13 +87,18 @@ export default function MarkdownRenderer({ content }) {
         remarkPlugins={[remarkGfm]}
         components={{
           code({ node, inline, className, children, ...props }) {
-            const match = /language-(\w+)/.exec(className || '')
+            const match = /language-([\w:/-]+)/.exec(className || '')
             const codeStr = String(children).replace(/\n$/, '')
+            const lang = match?.[1] || ''
 
-            if (!inline && match) {
-              return <CodeBlock language={match[1]}>{codeStr}</CodeBlock>
+            if (!inline && lang.startsWith('viz:')) {
+              const vizId = lang.slice(4)
+              return <DiagramTabs vizId={vizId}>{codeStr}</DiagramTabs>
             }
-            if (!inline && !match && codeStr.includes('\n')) {
+            if (!inline && lang && !lang.startsWith('viz:')) {
+              return <CodeBlock language={lang}>{codeStr}</CodeBlock>
+            }
+            if (!inline && !lang && codeStr.includes('\n')) {
               return <CodeBlock language="text">{codeStr}</CodeBlock>
             }
             return (

@@ -1,4 +1,5 @@
 import { useParams, Link, useNavigate } from 'react-router-dom'
+import { useEffect } from 'react'
 import { CheckCircle2, Circle, ChevronLeft, ChevronRight, Home, Trophy, Clock, Zap, Check, Code2 } from 'lucide-react'
 import { MODULES } from '../data/curriculum'
 import MarkdownRenderer from '../components/MarkdownRenderer'
@@ -29,6 +30,10 @@ export default function LessonPage({
   const { moduleId, lessonId } = useParams()
   const navigate = useNavigate()
   const { module, lesson, prev, next } = findLesson(moduleId, lessonId)
+
+  useEffect(() => {
+    document.querySelector('main')?.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [moduleId, lessonId])
 
   if (!module || !lesson) {
     return (

@@ -16,7 +16,7 @@ MCP SERVER → el que ESCUCHA / EJECUTA / PROVEE
 
 ## Analogía: Restaurante
 
-\`\`\`
+\`\`\`viz:restaurant
 👤 Tú (el usuario)
      │  "Quiero saber cuántos clientes hay en la BD"
      ▼
@@ -46,7 +46,7 @@ MCP SERVER → el que ESCUCHA / EJECUTA / PROVEE
 
 ## Ejemplo 1: Claude Code + Filesystem
 
-\`\`\`
+\`\`\`viz:filesystem-ex
 ┌──────────────────────────────────────┐
 │  CLAUDE CODE (el Host)               │
 │  ┌────────────────────────────────┐  │
@@ -68,7 +68,7 @@ MCP SERVER → el que ESCUCHA / EJECUTA / PROVEE
 
 ## Ejemplo 2: Claude Desktop + GitHub
 
-\`\`\`
+\`\`\`viz:github-ex
 Tú escribes: "¿Cuántos issues abiertos tiene mi repo?"
 
 [CLIENT - dentro de Claude Desktop]
@@ -95,7 +95,7 @@ Claude responde:
 }
 \`\`\`
 
-\`\`\`
+\`\`\`viz:multi-server
 Un solo CLIENT en Claude Code conectado a 3 Servers:
   ├── server-filesystem  (proceso 1)
   ├── server-postgres    (proceso 2)
@@ -106,7 +106,7 @@ Claude elige automáticamente cuál usar según la tarea.
 
 ## El Host: el tercer elemento
 
-\`\`\`
+\`\`\`viz:host-element
 HOST     = El programa que el usuario abre
              └── Contiene al CLIENT integrado
              └── Gestiona conexiones con Servers
@@ -245,7 +245,7 @@ Funciones que el agente puede llamar:
 
 ### 4. 🔄 Loop de Razonamiento (ReAct)
 
-\`\`\`
+\`\`\`viz:react-loop
 ┌─────────────────────────────────────────┐
 │  1. OBSERVAR  ──►  2. PENSAR  ──►  3. ACTUAR
 │       ▲                                 │
@@ -289,7 +289,7 @@ Todo esto usando **herramientas** conectadas via **MCP**.`,
 
 Antes de MCP, cada empresa hacía su propia integración:
 
-\`\`\`
+\`\`\`viz:mcp-problem
 SIN MCP (el caos anterior):
   App A ──────► Tool 1
   App A ──────► Tool 2        N apps × M tools
@@ -308,7 +308,7 @@ Nokia, Motorola, Sony Ericsson... luego llegó USB y ¡problema resuelto! 🎉
 
 ## Los 3 Elementos de MCP
 
-\`\`\`
+\`\`\`viz:mcp-elements
 ┌──────────────────────────────────────────────┐
 │  MCP HOST (el programa que usas)             │
 │  Ejemplos: Claude Desktop, Claude Code,      │
@@ -395,7 +395,7 @@ Eso rompe la arquitectura. **Sampling lo simplifica radicalmente.**
 
 #### Diagrama de flujo
 
-\`\`\`
+\`\`\`viz:sampling-flow
 Usuario → Host (Claude) → Servidor MCP
                               ↓
                     "necesito generar texto"
@@ -520,7 +520,7 @@ El cliente informa al servidor qué directorios puede acceder:
 
 Ejemplo: *"Analiza mis ventas de enero y manda el resumen por Slack"*
 
-\`\`\`
+\`\`\`viz:flow-complete
 PASO 1: TÚ hablas con el Agente
 Tu mensaje → Claude Code / Claude Desktop
 
@@ -550,7 +550,7 @@ PASO 6: El Agente RESPONDE
 
 ## Diagrama Técnico
 
-\`\`\`
+\`\`\`viz:juntos-technical
 ┌────────────────────────────────────────────┐
 │                 MCP HOST                   │
 │  ┌──────────┐       ┌───────────────────┐  │
@@ -594,7 +594,7 @@ Y **además** puede conectarse a MCP Servers externos.
 
 ## El Ciclo de Vida de un MCP Server
 
-\`\`\`
+\`\`\`viz:mcp-lifecycle
 1. INICIO
    └── El MCP Client lanza el servidor como proceso
        $ node mi-servidor-mcp.js
@@ -683,7 +683,7 @@ MCP usa **JSON-RPC 2.0** para todos sus mensajes. Es un estándar simple:
 ## Transporte: ¿Cómo viajan los mensajes?
 
 ### 🔌 stdio (Standard Input/Output) — El más común
-\`\`\`
+\`\`\`viz:stdio
 Cliente ──stdin──► Servidor
 Cliente ◄─stdout── Servidor
 \`\`\`
@@ -693,7 +693,7 @@ Cliente ◄─stdout── Servidor
 - Ideal para herramientas locales (archivos, BDs, Git...)
 
 ### 🌐 HTTP Streamable — Para servidores remotos
-\`\`\`
+\`\`\`viz:http-streamable
 Cliente ──HTTP POST──► Servidor
 Cliente ◄──SSE/HTTP─── Servidor
 \`\`\`
@@ -823,13 +823,13 @@ npx @modelcontextprotocol/inspector node servidor.js
 
 ### Agente Simple (Tool-Using Agent)
 Un solo LLM con acceso a herramientas, loop básico.
-\`\`\`
+\`\`\`viz:agent-simple
 [Usuario] → [LLM] → [Herramienta] → [LLM] → [Respuesta]
 \`\`\`
 
 ### Agente con Memoria
 Recuerda conversaciones pasadas mediante corto/largo plazo.
-\`\`\`
+\`\`\`viz:agent-memory
 [Usuario] → [LLM + Memoria] → [Herramientas] → [Respuesta]
                   ↑
             [Base de datos histórico]
@@ -837,13 +837,13 @@ Recuerda conversaciones pasadas mediante corto/largo plazo.
 
 ### Agente Planificador
 Crea un plan de pasos antes de actuar.
-\`\`\`
+\`\`\`viz:agent-planner
 [Tarea] → [Planificar] → [Paso 1] → [Paso 2] → [Resultado]
 \`\`\`
 
 ### Sistema Multi-Agente
 Varios agentes especializados que colaboran.
-\`\`\`
+\`\`\`viz:agent-multi
            [Orquestador]
           /      |       \\
    [Agente A] [Agente B] [Agente C]
@@ -856,12 +856,12 @@ Varios agentes especializados que colaboran.
 Manager asigna tareas, evalúa resultados, reasigna.
 
 ### Patrón 2: Secuencial (Pipeline)
-\`\`\`
+\`\`\`viz:pattern-seq
 [Agente 1] → output → [Agente 2] → output → [Agente 3]
 \`\`\`
 
 ### Patrón 3: Paralelo
-\`\`\`
+\`\`\`viz:pattern-par
 [Orquestador] lanza en paralelo:
 ├── [Agente A] busca en internet
 ├── [Agente B] consulta base de datos
@@ -916,7 +916,7 @@ async function ejecutarHerramienta(nombre, input) {
 
 ## Ejemplo Real: Análisis de Contratos
 
-\`\`\`
+\`\`\`viz:agent-multi
 TAREA: "Analiza este contrato de arrendamiento"
 
 [Orquestador]
@@ -934,7 +934,7 @@ TAREA: "Analiza este contrato de arrendamiento"
 
 Un **pipeline de 2 agentes** donde el output de uno es el input del otro:
 
-\`\`\`
+\`\`\`viz:pipeline-2
 [Tú]  →  "Investiga: MCP y Agentes de IA"
               │
               ▼
@@ -1014,7 +1014,7 @@ n8n es una plataforma de automatización **open source** que hostas tú mismo.
 
 ## ¿Para qué sirve en el Ecosistema IA?
 
-\`\`\`
+\`\`\`viz:n8n-email
 EJEMPLO REAL:
 Nuevo email llega a Gmail
         │
@@ -1299,7 +1299,7 @@ leer_archivo(ruta)          → Lee archivos de texto locales
 
 ## El loop ReAct que verás en acción
 
-\`\`\`
+\`\`\`viz:react-loop
 Thought: "Necesito buscar info sobre Machu Picchu en Wikipedia"
 Action: buscar_wikipedia("Machu Picchu")
 Observation: "Machu Picchu es un santuario histórico inca..."
@@ -1370,7 +1370,7 @@ const r = await agente.invoke({ messages: [...] })      // 4. Ejecutar
 
 ## El Mapa del Ecosistema
 
-\`\`\`
+\`\`\`viz:ecosystem
 CAPA 1: MODELOS (el cerebro)
 ├── Cloud: Claude, GPT-4, Gemini, Mistral
 └── Local: Llama, Phi, DeepSeek, Gemma
@@ -1456,7 +1456,7 @@ Un sistema de **Q&A sobre documentos de empresa** que corre 100% en tu máquina:
 
 ## Arquitectura
 
-\`\`\`
+\`\`\`viz:qa-arch
 [Usuario hace una pregunta]
         │
         ▼
@@ -1570,7 +1570,7 @@ Los LLMs tienen **tres problemas fundamentales**:
 
 ## 🏗️ Pipeline RAG: Las 2 Fases
 
-\`\`\`
+\`\`\`viz:rag-pipeline
 FASE 1: INDEXACIÓN (se hace una sola vez)
 ─────────────────────────────────────────
 📄 Documentos → ✂️ Chunking → 🔢 Embedding → 🗄️ Vector DB
