@@ -1677,6 +1677,630 @@ Mejorado:
   + RERANKING        → re-ordenar resultados (+10-30% precisión)
   + PARENT-CHILD     → chunks pequeños, recupera el padre grande
 \`\`\``,
+
+  // ── LANGCHAIN ──────────────────────────────────────────────────
+  langchain: `# LangChain — El Framework Universal para Agentes
+
+## ¿Qué es LangChain?
+
+LangChain es el **framework más popular del ecosistema IA**. Nació en 2022 y se convirtió en el estándar de facto para conectar LLMs con herramientas, bases de datos, APIs y memoria.
+
+> 💡 **Analogía**: LangChain es como el **framework Express.js del mundo de los LLMs** — bajo nivel, flexible, con muchas piezas que tú ensamblas. No hace todo por ti, pero puedes construir cualquier cosa.
+
+---
+
+## ¿Por qué existe LangChain?
+
+Sin LangChain tenías que escribir manualmente:
+- La llamada al LLM
+- El parseo de la respuesta
+- La lógica de reintento
+- El manejo de memoria
+- La conexión con herramientas
+- El formateo de prompts
+
+LangChain **empaqueta todo eso** en bloques reutilizables.
+
+---
+
+## Arquitectura de LangChain: De Simple a Complejo
+
+\`\`\`viz:langchain
+LLM → [LLMChain] → [AgentExecutor con Tools] → [ConversationChain] → [RAG Chain]
+Nivel 1: Llamar un LLM
+Nivel 2: Encadenar LLM + Prompt
+Nivel 3: Agente con herramientas
+Nivel 4: Conversación con memoria
+Nivel 5: RAG + memoria + herramientas
+\`\`\`
+
+---
+
+## Nivel 1 — Llamada básica al LLM
+
+El bloque más simple: conectar con un modelo y obtener una respuesta.
+
+\`\`\`python
+from langchain_anthropic import ChatAnthropic
+
+llm = ChatAnthropic(model="claude-sonnet-4-6")
+respuesta = llm.invoke("¿Qué es el protocolo MCP?")
+print(respuesta.content)
+\`\`\`
+
+\`\`\`javascript
+import { ChatAnthropic } from "@langchain/anthropic";
+
+const llm = new ChatAnthropic({ model: "claude-sonnet-4-6" });
+const respuesta = await llm.invoke("¿Qué es el protocolo MCP?");
+console.log(respuesta.content);
+\`\`\`
+
+---
+
+## Nivel 2 — Chains: Encadenando pasos
+
+Una **Chain** conecta un Prompt Template con el LLM. Así tienes prompts reutilizables y configurables.
+
+\`\`\`python
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_anthropic import ChatAnthropic
+from langchain_core.output_parsers import StrOutputParser
+
+# El pipe operator | es la clave de LangChain
+chain = (
+    ChatPromptTemplate.from_template("Explica {tema} en una oración, para un {nivel}")
+    | ChatAnthropic(model="claude-haiku-4-5-20251001")
+    | StrOutputParser()
+)
+
+print(chain.invoke({"tema": "MCP", "nivel": "principiante"}))
+# → "MCP es el protocolo que permite a los agentes de IA usar herramientas externas de forma estándar."
+\`\`\`
+
+> 🔑 **El operador \`|\`** (pipe) es la forma moderna de LangChain (LCEL — LangChain Expression Language). Compone pasos como bloques LEGO.
+
+---
+
+## Nivel 3 — Agentes con Herramientas (Tools)
+
+El poder real: el LLM decide **cuándo usar qué herramienta**.
+
+\`\`\`python
+from langchain_anthropic import ChatAnthropic
+from langchain.agents import create_tool_calling_agent, AgentExecutor
+from langchain_community.tools import DuckDuckGoSearchRun
+from langchain_core.prompts import ChatPromptTemplate
+
+# 1. Definir herramientas
+tools = [DuckDuckGoSearchRun()]
+
+# 2. Prompt del agente
+prompt = ChatPromptTemplate.from_messages([
+    ("system", "Eres un asistente útil. Usa herramientas cuando necesites."),
+    ("human", "{input}"),
+    ("placeholder", "{agent_scratchpad}"),
+])
+
+# 3. Crear agente
+llm = ChatAnthropic(model="claude-sonnet-4-6")
+agente = create_tool_calling_agent(llm, tools, prompt)
+ejecutor = AgentExecutor(agent=agente, tools=tools, verbose=True)
+
+# 4. Ejecutar
+resultado = ejecutor.invoke({"input": "¿Cuál es la última versión de Python?"})
+print(resultado["output"])
+\`\`\`
+
+---
+
+## Nivel 4 — Memoria Conversacional
+
+Para que el agente **recuerde** lo que dijo antes.
+
+\`\`\`python
+from langchain_core.chat_history import InMemoryChatMessageHistory
+from langchain_core.runnables.history import RunnableWithMessageHistory
+
+# Memoria por sesión
+historial = {}
+def get_historial(session_id):
+    if session_id not in historial:
+        historial[session_id] = InMemoryChatMessageHistory()
+    return historial[session_id]
+
+# Chain con memoria
+chain_con_memoria = RunnableWithMessageHistory(
+    chain,
+    get_historial,
+    input_messages_key="input",
+    history_messages_key="history",
+)
+
+config = {"configurable": {"session_id": "usuario_1"}}
+chain_con_memoria.invoke({"input": "Me llamo Carlos"}, config=config)
+chain_con_memoria.invoke({"input": "¿Cómo me llamo?"}, config=config)
+# → "Te llamas Carlos."
+\`\`\`
+
+---
+
+## Nivel 5 — RAG Chain completo
+
+Combina **recuperación de documentos** con generación de respuestas.
+
+\`\`\`python
+from langchain_community.vectorstores import Chroma
+from langchain_anthropic import ChatAnthropic
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnablePassthrough
+
+# RAG Chain completo
+rag_chain = (
+    {"context": retriever, "question": RunnablePassthrough()}
+    | ChatPromptTemplate.from_template(
+        "Responde basándote en el contexto:\\n{context}\\nPregunta: {question}"
+    )
+    | ChatAnthropic(model="claude-sonnet-4-6")
+)
+
+respuesta = rag_chain.invoke("¿Qué dicen los documentos sobre MCP?")
+\`\`\`
+
+---
+
+## ¿Qué puedes construir con LangChain?
+
+| Caso de uso | Componentes clave |
+|---|---|
+| Chatbot con memoria | ConversationChain + ChatHistory |
+| Asistente con búsqueda web | Agent + SearchTool |
+| Q&A sobre documentos propios | RAG Chain + VectorStore |
+| Extractor de datos estructurados | Chain + PydanticOutputParser |
+| Pipeline de análisis de texto | SequentialChain |
+| Agente con MCP | MCPToolkit + AgentExecutor |
+
+---
+
+## Limitaciones de LangChain
+
+- **Complejidad**: muchas abstracciones que pueden confundir al inicio
+- **Sin control de flujo visual**: para lógica compleja usa LangGraph (ver siguiente lección)
+- **Curva de aprendizaje**: la API cambió mucho entre versiones
+`,
+
+  // ── LANGGRAPH ──────────────────────────────────────────────────
+  langgraph: `# LangGraph — Agentes con Estado y Flujos Complejos
+
+## ¿Qué es LangGraph?
+
+LangGraph es una **extensión de LangChain** que permite construir agentes con **lógica de grafo**: nodos de procesamiento, aristas condicionales, ciclos de revisión y estado persistente.
+
+> 💡 **Analogía**: Si LangChain es como una línea de montaje (A → B → C), LangGraph es como un **diagrama de flujo con decisiones** — puedes ir de A a B, de B volver a A, o saltar a C dependiendo de condiciones.
+
+---
+
+## ¿Por qué LangGraph?
+
+LangChain es genial para cadenas simples, pero ¿qué pasa cuando necesitas:
+
+- Un agente que **revisa su propio trabajo** antes de responder
+- Un flujo donde el LLM **decide qué rama tomar**
+- **Ciclos**: el agente intenta, falla, y lo reintenta diferente
+- **Múltiples agentes** coordinados con roles
+
+Para eso está LangGraph.
+
+---
+
+## Conceptos Clave
+
+\`\`\`viz:langgraph
+State → Nodo 1 → Nodo 2 → [condicional] → Fin o Ciclo
+\`\`\`
+
+| Concepto | Descripción |
+|---|---|
+| **State** | Diccionario compartido que todos los nodos leen y modifican |
+| **Node** | Función que recibe el State y devuelve actualizaciones |
+| **Edge** | Conexión entre nodos (puede ser condicional) |
+| **Graph** | El grafo completo que orquesta todo |
+| **Checkpoint** | Guarda el estado para reanudar o inspeccionar |
+
+---
+
+## Nivel 1 — Grafo básico: dos nodos en secuencia
+
+\`\`\`python
+from langgraph.graph import StateGraph, END
+from typing import TypedDict
+
+# 1. Definir el estado
+class Estado(TypedDict):
+    pregunta: str
+    respuesta: str
+
+# 2. Definir nodos
+def analizar(state: Estado):
+    print(f"Analizando: {state['pregunta']}")
+    return {"respuesta": f"Análisis de: {state['pregunta']}"}
+
+def mejorar(state: Estado):
+    return {"respuesta": state["respuesta"] + " [MEJORADO]"}
+
+# 3. Construir el grafo
+grafo = StateGraph(Estado)
+grafo.add_node("analizar", analizar)
+grafo.add_node("mejorar", mejorar)
+grafo.set_entry_point("analizar")
+grafo.add_edge("analizar", "mejorar")
+grafo.add_edge("mejorar", END)
+
+app = grafo.compile()
+resultado = app.invoke({"pregunta": "¿Qué es MCP?", "respuesta": ""})
+print(resultado["respuesta"])
+\`\`\`
+
+---
+
+## Nivel 2 — Aristas Condicionales
+
+El nodo **decide** a dónde va el flujo según el estado.
+
+\`\`\`python
+from langgraph.graph import StateGraph, END
+from langchain_anthropic import ChatAnthropic
+from typing import TypedDict, Literal
+
+class Estado(TypedDict):
+    pregunta: str
+    respuesta: str
+    necesita_busqueda: bool
+
+llm = ChatAnthropic(model="claude-haiku-4-5-20251001")
+
+def evaluar_pregunta(state: Estado):
+    # El LLM decide si necesita buscar información externa
+    respuesta = llm.invoke(
+        f"¿Esta pregunta necesita búsqueda web? Solo responde 'sí' o 'no': {state['pregunta']}"
+    )
+    necesita = "sí" in respuesta.content.lower()
+    return {"necesita_busqueda": necesita}
+
+def buscar_web(state: Estado):
+    return {"respuesta": f"[Búsqueda web] Respuesta sobre: {state['pregunta']}"}
+
+def responder_directo(state: Estado):
+    return {"respuesta": llm.invoke(state["pregunta"]).content}
+
+# Función condicional: decide la rama
+def decidir_rama(state: Estado) -> Literal["buscar", "directo"]:
+    return "buscar" if state["necesita_busqueda"] else "directo"
+
+# Construir grafo con bifurcación
+grafo = StateGraph(Estado)
+grafo.add_node("evaluar", evaluar_pregunta)
+grafo.add_node("buscar", buscar_web)
+grafo.add_node("directo", responder_directo)
+
+grafo.set_entry_point("evaluar")
+grafo.add_conditional_edges("evaluar", decidir_rama)
+grafo.add_edge("buscar", END)
+grafo.add_edge("directo", END)
+
+app = grafo.compile()
+\`\`\`
+
+---
+
+## Nivel 3 — Agente con Ciclo (ReAct en LangGraph)
+
+El patrón más poderoso: el agente ejecuta herramientas en un **bucle** hasta completar la tarea.
+
+\`\`\`python
+from langgraph.prebuilt import create_react_agent
+from langchain_anthropic import ChatAnthropic
+from langchain_core.tools import tool
+
+@tool
+def calcular(expresion: str) -> str:
+    """Evalúa una expresión matemática."""
+    return str(eval(expresion))
+
+@tool
+def buscar_doc(tema: str) -> str:
+    """Busca en la base de documentos."""
+    docs = {"MCP": "Protocolo para conectar agentes con herramientas."}
+    return docs.get(tema, "No encontrado")
+
+llm = ChatAnthropic(model="claude-sonnet-4-6")
+tools = [calcular, buscar_doc]
+
+# create_react_agent crea el ciclo ReAct automáticamente
+agente = create_react_agent(llm, tools)
+
+resultado = agente.invoke({
+    "messages": [("human", "¿Cuánto es 25 * 4 y qué es MCP?")]
+})
+print(resultado["messages"][-1].content)
+\`\`\`
+
+---
+
+## Nivel 4 — Multi-agente con Supervisor
+
+Un agente **supervisor** decide qué agente especializado invocar.
+
+\`\`\`python
+from langgraph.graph import StateGraph, END
+from langchain_anthropic import ChatAnthropic
+from typing import TypedDict, Literal
+
+llm = ChatAnthropic(model="claude-sonnet-4-6")
+
+class EstadoMulti(TypedDict):
+    tarea: str
+    resultado: str
+    agente_usado: str
+
+def supervisor(state: EstadoMulti) -> Literal["redactor", "analista", "fin"]:
+    """Decide qué agente usar."""
+    tarea = state["tarea"].lower()
+    if "escribe" in tarea or "redacta" in tarea:
+        return "redactor"
+    elif "analiza" in tarea or "calcula" in tarea:
+        return "analista"
+    return "fin"
+
+def agente_redactor(state: EstadoMulti):
+    resp = llm.invoke(f"Como redactor experto: {state['tarea']}")
+    return {"resultado": resp.content, "agente_usado": "redactor"}
+
+def agente_analista(state: EstadoMulti):
+    resp = llm.invoke(f"Como analista de datos: {state['tarea']}")
+    return {"resultado": resp.content, "agente_usado": "analista"}
+
+grafo = StateGraph(EstadoMulti)
+grafo.add_node("redactor", agente_redactor)
+grafo.add_node("analista", agente_analista)
+grafo.set_entry_point("supervisor_node")  # simplificado
+\`\`\`
+
+---
+
+## ¿Cuándo usar LangGraph?
+
+| Situación | Usa LangGraph |
+|---|---|
+| El agente necesita revisar su propio output | ✅ Sí |
+| Flujo con bifurcaciones condicionales | ✅ Sí |
+| Múltiples agentes coordinados | ✅ Sí |
+| Necesitas inspeccionar el estado entre pasos | ✅ Sí |
+| Solo es una cadena lineal simple | ❌ Usa LangChain |
+| Flujo visual sin código | ❌ Usa n8n |
+`,
+
+  // ── CREWAI ──────────────────────────────────────────────────────
+  crewai: `# CrewAI — Equipos de Agentes con Roles
+
+## ¿Qué es CrewAI?
+
+CrewAI es un framework para crear **equipos de agentes IA** donde cada agente tiene un rol específico, un objetivo y herramientas propias. Los agentes colaboran para completar tareas complejas, igual que un equipo humano real.
+
+> 💡 **Analogía**: CrewAI es como **contratar una agencia creativa**. Tienes un Director, un Investigador, un Redactor y un Editor — cada uno es experto en algo y trabajan juntos en el mismo proyecto.
+
+---
+
+## Diferencia con LangChain/LangGraph
+
+| Framework | Enfoque | Ideal para |
+|---|---|---|
+| LangChain | Cadenas y herramientas | Pipelines de texto, RAG |
+| LangGraph | Grafos con estado | Flujos complejos con ciclos |
+| **CrewAI** | **Equipos de agentes con roles** | **Proyectos colaborativos** |
+
+---
+
+## Arquitectura de CrewAI
+
+\`\`\`viz:crewai
+Crew → [Agent 1: Rol+Goal+Tools] + [Agent 2: Rol+Goal+Tools] → Tasks → Output
+\`\`\`
+
+Los 4 bloques principales:
+
+| Bloque | ¿Qué es? |
+|---|---|
+| **Agent** | Un agente con rol, goal, backstory y tools propias |
+| **Task** | Una tarea específica con descripción y expected_output |
+| **Crew** | El equipo: junta agentes + tareas + define proceso |
+| **Tool** | Capacidades que el agente puede usar (búsqueda, código, etc.) |
+
+---
+
+## Nivel 1 — Equipo mínimo: dos agentes
+
+\`\`\`python
+from crewai import Agent, Task, Crew
+
+# 1. Definir agentes con personalidad y rol
+investigador = Agent(
+    role="Investigador",
+    goal="Encontrar información precisa y actualizada sobre el tema",
+    backstory="Eres un investigador meticuloso con acceso a múltiples fuentes.",
+    verbose=True,
+)
+
+redactor = Agent(
+    role="Redactor Técnico",
+    goal="Transformar la investigación en contenido claro y didáctico",
+    backstory="Eres experto en explicar conceptos complejos de forma simple.",
+    verbose=True,
+)
+
+# 2. Definir tareas con responsable
+tarea_investigar = Task(
+    description="Investiga qué es el protocolo MCP y sus componentes clave",
+    expected_output="Un resumen técnico con los 5 puntos más importantes de MCP",
+    agent=investigador,
+)
+
+tarea_redactar = Task(
+    description="Usando la investigación anterior, escribe una explicación para principiantes",
+    expected_output="Un artículo de 300 palabras que explique MCP sin tecnicismos",
+    agent=redactor,
+)
+
+# 3. Crear el equipo y ejecutar
+equipo = Crew(
+    agents=[investigador, redactor],
+    tasks=[tarea_investigar, tarea_redactar],
+    verbose=True,
+)
+
+resultado = equipo.kickoff()
+print(resultado)
+\`\`\`
+
+---
+
+## Nivel 2 — Agentes con Herramientas
+
+Los agentes pueden usar herramientas para buscar, ejecutar código o interactuar con APIs.
+
+\`\`\`python
+from crewai import Agent, Task, Crew
+from crewai_tools import SerperDevTool, FileReadTool
+
+# Herramientas
+busqueda_web = SerperDevTool()
+leer_archivo = FileReadTool()
+
+# Agente con herramientas específicas
+investigador_web = Agent(
+    role="Investigador Web",
+    goal="Buscar las últimas noticias sobre agentes de IA",
+    backstory="Especialista en rastrear tendencias tecnológicas en tiempo real.",
+    tools=[busqueda_web],  # Solo este agente puede buscar en internet
+)
+
+analista = Agent(
+    role="Analista de Datos",
+    goal="Analizar los archivos de datos locales y extraer insights",
+    backstory="Experto en encontrar patrones en grandes volúmenes de datos.",
+    tools=[leer_archivo],  # Solo este lee archivos locales
+)
+
+tarea_buscar = Task(
+    description="Busca las 3 últimas noticias sobre LLM agents en 2025",
+    expected_output="Lista de 3 noticias con título, fecha y resumen de 2 líneas",
+    agent=investigador_web,
+)
+
+tarea_analizar = Task(
+    description="Lee el archivo 'datos.csv' y encuentra las 3 tendencias principales",
+    expected_output="Informe con 3 tendencias y su evidencia en los datos",
+    agent=analista,
+)
+
+equipo = Crew(
+    agents=[investigador_web, analista],
+    tasks=[tarea_buscar, tarea_analizar],
+    verbose=True,
+)
+
+resultado = equipo.kickoff()
+\`\`\`
+
+---
+
+## Nivel 3 — Pipeline de Contenido Completo
+
+Un caso real: generar un artículo técnico de principio a fin con 4 agentes especializados.
+
+\`\`\`python
+from crewai import Agent, Task, Crew, Process
+
+# Los 4 agentes de una redacción
+planificador = Agent(
+    role="Planificador de Contenido",
+    goal="Crear el esquema y la estructura óptima del artículo",
+    backstory="Experto en SEO y estructura narrativa de contenido técnico.",
+)
+
+investigador = Agent(
+    role="Investigador",
+    goal="Reunir datos, estadísticas y ejemplos reales",
+    backstory="Investigador exhaustivo que verifica toda la información.",
+)
+
+redactor = Agent(
+    role="Redactor Senior",
+    goal="Escribir el artículo completo siguiendo el plan e investigación",
+    backstory="Escritor técnico con 10 años de experiencia en IA.",
+)
+
+editor = Agent(
+    role="Editor Jefe",
+    goal="Revisar, mejorar y garantizar la calidad final del artículo",
+    backstory="Editor meticuloso que asegura claridad, precisión y estilo.",
+)
+
+# Pipeline secuencial de tareas
+t1 = Task(
+    description="Crea el esquema del artículo 'Cómo funcionan los Agentes de IA' con 5 secciones",
+    expected_output="Esquema detallado con título, 5 secciones y puntos clave de cada una",
+    agent=planificador,
+)
+t2 = Task(
+    description="Investiga y recopila datos para cada sección del esquema anterior",
+    expected_output="Datos, estadísticas y ejemplos para cada sección del esquema",
+    agent=investigador,
+)
+t3 = Task(
+    description="Escribe el artículo completo basándote en el esquema y la investigación",
+    expected_output="Artículo completo de 800 palabras con todos los datos integrados",
+    agent=redactor,
+)
+t4 = Task(
+    description="Revisa el artículo: corrige errores, mejora la claridad y agrega una conclusión impactante",
+    expected_output="Artículo final pulido, listo para publicar",
+    agent=editor,
+)
+
+# Process.sequential = cada tarea espera a la anterior
+equipo = Crew(
+    agents=[planificador, investigador, redactor, editor],
+    tasks=[t1, t2, t3, t4],
+    process=Process.sequential,
+    verbose=True,
+)
+
+articulo_final = equipo.kickoff()
+print(articulo_final)
+\`\`\`
+
+---
+
+## Procesos de CrewAI
+
+| Proceso | Comportamiento | Cuándo usarlo |
+|---|---|---|
+| \`Process.sequential\` | Tarea 1 → 2 → 3 → 4 en orden | Pipeline lineal, cada paso depende del anterior |
+| \`Process.hierarchical\` | Manager LLM coordina a los agentes | Tareas complejas sin orden fijo |
+
+---
+
+## ¿Cuándo usar CrewAI?
+
+✅ Tienes tareas que naturalmente se dividen en **roles** (investigar, redactar, revisar)
+✅ Quieres **contexto compartido** entre agentes sin programar grafos
+✅ Necesitas un sistema donde agentes se **pasan información** entre sí
+✅ Prototipos rápidos de sistemas multi-agente
+
+❌ Necesitas control fino de flujo (usa LangGraph)
+❌ El proyecto es simple y un solo agente alcanza
+`,
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -3206,6 +3830,89 @@ preguntar();`,
     tailwindBorder: 'border-rose-500/20',
     description: 'Visión completa del ecosistema y proyecto final integrador.',
     lessons: [
+      {
+        id: 'langchain',
+        title: 'LangChain — El Framework Universal',
+        icon: '⛓️',
+        duration: '35 min',
+        content: CONTENT.langchain,
+        tic: {
+          acronym: 'CPHTM',
+          trigger: '¡Con Pipes Haces Todo Más!',
+          letters: [
+            { letter: 'C', word: 'Chain', desc: 'Encadenas pasos con el operador |' },
+            { letter: 'P', word: 'Prompt', desc: 'Template reutilizable para el LLM' },
+            { letter: 'H', word: 'History', desc: 'Memoria conversacional de sesión' },
+            { letter: 'T', word: 'Tool', desc: 'Herramientas que el agente puede usar' },
+            { letter: 'M', word: 'Model', desc: 'El LLM que razona (Claude, GPT...)' },
+          ],
+          analogy: 'LangChain = bloques LEGO: conectas Prompt | Model | Tool | Memory con el operador pipe y construyes cualquier agente.',
+          emoji: '⛓️',
+        },
+        checklist: [
+          'Entiendo qué es LangChain y por qué existe',
+          'Puedo crear una Chain básica con el operador |',
+          'Sé cómo definir un agente con herramientas usando AgentExecutor',
+          'Entiendo cómo agregar memoria conversacional a una chain',
+          'Conozco cómo construir un RAG Chain completo',
+          'Sé cuándo LangChain es la elección correcta vs LangGraph',
+        ],
+      },
+      {
+        id: 'langgraph',
+        title: 'LangGraph — Agentes con Estado',
+        icon: '🕸️',
+        duration: '40 min',
+        content: CONTENT.langgraph,
+        tic: {
+          acronym: 'GNECA',
+          trigger: '¡El Grafo NE CAgó!',
+          letters: [
+            { letter: 'G', word: 'Graph', desc: 'El grafo que orquesta el flujo' },
+            { letter: 'N', word: 'Node', desc: 'Función que transforma el estado' },
+            { letter: 'E', word: 'Edge', desc: 'Conexión entre nodos (puede ser condicional)' },
+            { letter: 'C', word: 'Conditional', desc: 'Arista que decide la rama según el estado' },
+            { letter: 'A', word: 'Agents', desc: 'Los agentes que ejecutan en los nodos' },
+          ],
+          analogy: 'LangGraph = diagrama de flujo con código: los Nodos procesan, las Edges conectan, y el Estado fluye a través de todo el Grafo.',
+          emoji: '🕸️',
+        },
+        checklist: [
+          'Entiendo la diferencia entre LangChain (lineal) y LangGraph (grafo)',
+          'Puedo definir un TypedDict como State y crear nodos que lo modifiquen',
+          'Sé cómo agregar aristas condicionales para bifurcar el flujo',
+          'Entiendo el ciclo ReAct en LangGraph con create_react_agent',
+          'Puedo describir un diseño multi-agente con supervisor en LangGraph',
+          'Sé cuándo usar LangGraph vs LangChain vs CrewAI',
+        ],
+      },
+      {
+        id: 'crewai',
+        title: 'CrewAI — Equipos de Agentes',
+        icon: '👥',
+        duration: '35 min',
+        content: CONTENT.crewai,
+        tic: {
+          acronym: 'ATCE',
+          trigger: '¡A Todo el Crew le Encanta!',
+          letters: [
+            { letter: 'A', word: 'Agent', desc: 'Agente con rol, goal y backstory' },
+            { letter: 'T', word: 'Task', desc: 'Tarea concreta con expected_output' },
+            { letter: 'C', word: 'Crew', desc: 'El equipo que agrupa agentes y tareas' },
+            { letter: 'E', word: 'Execute', desc: 'crew.kickoff() lanza todo el proceso' },
+          ],
+          analogy: 'CrewAI = una agencia creativa: cada Agent tiene un rol, cada Task es un encargo, y el Crew es el equipo que kickoff() pone en marcha.',
+          emoji: '👥',
+        },
+        checklist: [
+          'Entiendo la diferencia entre CrewAI y LangChain/LangGraph',
+          'Puedo crear un Agent con rol, goal y backstory apropiados',
+          'Sé cómo asignar herramientas específicas a cada agente',
+          'Entiendo cómo las tareas se pasan información entre sí',
+          'Puedo configurar Process.sequential y entender cuándo usar Process.hierarchical',
+          'Sé diseñar un equipo de 4 agentes para un pipeline de contenido',
+        ],
+      },
       {
         id: 'comparativa',
         title: 'Comparativa de Herramientas',

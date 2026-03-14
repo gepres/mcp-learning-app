@@ -10,6 +10,7 @@ import {
   DiagSamplingFlow, DiagRestaurant, DiagFilesystemExample,
   DiagGithubExample, DiagMultiServer, DiagHostElement, DiagJuntosTechnical,
   DiagStdio, DiagHttpStreamable,
+  DiagLangChainProgression, DiagLangGraphFlow, DiagCrewStructure, DiagFrameworksComparison,
 } from './DiagramComponents'
 
 const REGISTRY = {
@@ -26,6 +27,10 @@ const REGISTRY = {
   'juntos-technical':  DiagJuntosTechnical,
   'stdio':             DiagStdio,
   'http-streamable':   DiagHttpStreamable,
+  'langchain':         DiagLangChainProgression,
+  'langgraph':         DiagLangGraphFlow,
+  'crewai':            DiagCrewStructure,
+  'frameworks-cmp':    DiagFrameworksComparison,
   'agent-simple':      DiagAgentSimple,
   'agent-memory':      DiagAgentMemory,
   'agent-planner':     DiagAgentPlanner,

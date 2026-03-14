@@ -1079,3 +1079,288 @@ export function DiagHttpStreamable() {
     </Wrapper>
   )
 }
+
+// ══════════════════════════════════════════════════════════════════════════
+// 27. LANGCHAIN PROGRESSION — simple → rag → agent
+// ══════════════════════════════════════════════════════════════════════════
+export function DiagLangChainProgression() {
+  return (
+    <Wrapper note="LangChain = piezas modulares que se conectan con el operador |">
+      <div className="flex flex-col gap-4 w-full max-w-lg">
+
+        {/* Nivel 1 */}
+        <div className="rounded-xl p-3" style={{ background: C.blue + '08', border: `1.5px solid ${C.blue}35` }}>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-black" style={{ background: C.blue + '25', color: C.blue }}>1</span>
+            <span className="text-xs font-bold uppercase" style={{ color: C.blue }}>LLM directo — 2 líneas</span>
+          </div>
+          <div className="flex items-center gap-2 justify-center">
+            <Box label="❓ Pregunta" color={C.blue} />
+            <Arr color={C.blue} />
+            <Box label="🧠 LLM" color={C.purple} />
+            <Arr color={C.purple} />
+            <Box label="💬 Respuesta" color={C.green} />
+          </div>
+        </div>
+
+        {/* Nivel 2 */}
+        <div className="rounded-xl p-3" style={{ background: C.purple + '08', border: `1.5px solid ${C.purple}35` }}>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-black" style={{ background: C.purple + '25', color: C.purple }}>2</span>
+            <span className="text-xs font-bold uppercase" style={{ color: C.purple }}>Chain: Prompt | LLM | Parser</span>
+          </div>
+          <div className="flex items-center gap-1 justify-center flex-wrap">
+            {[
+              { lb: '📝 Prompt Template', cl: C.blue },
+              { lb: '🧠 LLM', cl: C.purple },
+              { lb: '✂️ Output Parser', cl: C.violet },
+              { lb: '📄 Texto limpio', cl: C.green },
+            ].map((s, i, arr) => (
+              <div key={s.lb} className="flex items-center gap-1">
+                <div className="px-2 py-1.5 rounded-lg text-xs font-semibold text-center" style={{ background: s.cl + '18', color: s.cl, border: `1px solid ${s.cl}35` }}>{s.lb}</div>
+                {i < arr.length - 1 && <span style={{ color: s.cl }}>|</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Nivel 3 */}
+        <div className="rounded-xl p-3" style={{ background: C.green + '08', border: `1.5px solid ${C.green}35` }}>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-black" style={{ background: C.green + '25', color: C.green }}>3</span>
+            <span className="text-xs font-bold uppercase" style={{ color: C.green }}>RAG Chain — con documentos propios</span>
+          </div>
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2 justify-center">
+              <Box label="❓ Pregunta" color={C.amber} />
+              <Arr color={C.amber} />
+              <div className="flex flex-col items-center gap-0.5">
+                <Box label="🔍 Retriever" color={C.green} sub="busca en Vector DB" />
+              </div>
+              <Arr color={C.green} />
+              <Box label="📋 Contexto" color={C.teal} />
+            </div>
+            <div className="flex items-center gap-2 justify-center">
+              <Box label="📝 Prompt + Contexto" color={C.purple} wide />
+              <Arr color={C.purple} />
+              <Box label="🧠 LLM" color={C.purple} />
+              <Arr color={C.purple} />
+              <Box label="💬 Respuesta" color={C.green} />
+            </div>
+          </div>
+        </div>
+
+        {/* Nivel 4 */}
+        <div className="rounded-xl p-3" style={{ background: C.amber + '08', border: `1.5px solid ${C.amber}35` }}>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-black" style={{ background: C.amber + '25', color: C.amber }}>4</span>
+            <span className="text-xs font-bold uppercase" style={{ color: C.amber }}>Agent — LLM autónomo con herramientas</span>
+          </div>
+          <div className="flex items-center gap-2 justify-center flex-wrap">
+            <Box label="❓ Pregunta" color={C.blue} />
+            <Arr color={C.blue} />
+            <Box label="🧠 LLM decide" color={C.purple} sub="ReAct loop" />
+            <Arr color={C.purple} label="tool_call" />
+            <Box label="🔧 Tool" color={C.amber} />
+            <Arr dir="l" color={C.amber} label="result" />
+            <Box label="💬 Respuesta" color={C.green} />
+          </div>
+        </div>
+
+      </div>
+    </Wrapper>
+  )
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// 28. LANGGRAPH FLOW — grafo de estados con ciclos condicionales
+// ══════════════════════════════════════════════════════════════════════════
+export function DiagLangGraphFlow() {
+  return (
+    <Wrapper note="LangGraph = agentes como grafos de estado — ciclos, condiciones, multi-agente">
+      <div className="flex flex-col gap-4 w-full max-w-md">
+
+        {/* Nivel 1: lineal */}
+        <div className="rounded-xl p-3" style={{ background: C.blue + '08', border: `1.5px solid ${C.blue}35` }}>
+          <div className="text-xs font-bold uppercase mb-2" style={{ color: C.blue }}>Nivel 1 — Grafo lineal</div>
+          <div className="flex items-center gap-2 justify-center">
+            {['START', 'Nodo A', 'Nodo B', 'END'].map((n, i, arr) => (
+              <div key={n} className="flex items-center gap-2">
+                <div className="px-2 py-1 rounded-lg text-xs font-bold" style={{ background: i === 0 || i === arr.length - 1 ? C.blue + '25' : C.purple + '18', color: i === 0 || i === arr.length - 1 ? C.blue : C.purple, border: `1px solid ${i === 0 || i === arr.length - 1 ? C.blue : C.purple}35` }}>{n}</div>
+                {i < arr.length - 1 && <Arr color={C.blue} />}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Nivel 2: con ciclo */}
+        <div className="rounded-xl p-3" style={{ background: C.purple + '08', border: `1.5px solid ${C.purple}35` }}>
+          <div className="text-xs font-bold uppercase mb-2" style={{ color: C.purple }}>Nivel 2 — Con ciclo y condición</div>
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2 justify-center">
+              <div className="px-2 py-1 rounded-lg text-xs font-bold" style={{ background: C.blue + '25', color: C.blue }}>START</div>
+              <Arr color={C.blue} />
+              <Box label="🧠 LLM" color={C.purple} />
+              <Arr color={C.purple} label="¿tool?" />
+              <Box label="🔧 Tool" color={C.amber} />
+            </div>
+            <div className="flex items-center gap-2 justify-end pr-4">
+              <span className="text-xs px-2 py-0.5 rounded-full" style={{ color: C.amber, background: C.amber + '15' }}>resultado → vuelve al LLM</span>
+              <Arr dir="l" color={C.amber} />
+            </div>
+            <div className="flex items-center gap-2 justify-center">
+              <Box label="🧠 LLM" color={C.purple} />
+              <Arr color={C.purple} label="¿final?" />
+              <div className="px-2 py-1 rounded-lg text-xs font-bold" style={{ background: C.green + '25', color: C.green }}>END ✅</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Nivel 3: multi-agente supervisado */}
+        <div className="rounded-xl p-3" style={{ background: C.green + '08', border: `1.5px solid ${C.green}35` }}>
+          <div className="text-xs font-bold uppercase mb-2" style={{ color: C.green }}>Nivel 3 — Multi-agente supervisado</div>
+          <div className="flex flex-col items-center gap-2">
+            <div className="flex items-center gap-2">
+              <div className="px-2 py-1 rounded-lg text-xs font-bold" style={{ background: C.blue + '25', color: C.blue }}>START</div>
+              <Arr color={C.blue} />
+              <Box label="🎯 Supervisor" color={C.purple} sub="decide quién actúa" />
+            </div>
+            <div className="flex gap-4">
+              {[
+                { label: '🔍 Investigador', color: C.blue },
+                { label: '✍️ Redactor', color: C.green },
+              ].map(a => (
+                <div key={a.label} className="flex flex-col items-center gap-1">
+                  <Arr dir="d" color={C.purple} />
+                  <div className="px-2 py-1.5 rounded-xl text-xs font-bold text-center" style={{ background: a.color + '18', color: a.color, border: `1px solid ${a.color}35` }}>{a.label}</div>
+                  <Arr dir="u" color={a.color} />
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center gap-2">
+              <Box label="🎯 Supervisor" color={C.purple} sub="¿terminado?" />
+              <Arr color={C.purple} />
+              <div className="px-2 py-1 rounded-lg text-xs font-bold" style={{ background: C.green + '25', color: C.green }}>END ✅</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </Wrapper>
+  )
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// 29. CREWAI STRUCTURE — agentes con roles, tareas y proceso
+// ══════════════════════════════════════════════════════════════════════════
+export function DiagCrewStructure() {
+  return (
+    <Wrapper note="CrewAI = define quiénes son tus agentes, no cómo programarlos">
+      <div className="flex flex-col gap-4 w-full max-w-md">
+
+        {/* Nivel 1: 1 agente */}
+        <div className="rounded-xl p-3" style={{ background: C.blue + '08', border: `1.5px solid ${C.blue}35` }}>
+          <div className="text-xs font-bold uppercase mb-2" style={{ color: C.blue }}>Nivel 1 — 1 Agente, 1 Tarea</div>
+          <div className="flex items-center gap-2 justify-center">
+            <div className="px-3 py-2 rounded-xl text-center" style={{ background: C.blue + '18', border: `1px solid ${C.blue}35` }}>
+              <div className="text-xs font-black" style={{ color: C.blue }}>🔍 Investigador</div>
+              <div className="text-xs" style={{ color: 'var(--text-muted)' }}>role + goal + backstory</div>
+            </div>
+            <Arr color={C.blue} />
+            <div className="px-3 py-2 rounded-xl text-center" style={{ background: C.purple + '18', border: `1px solid ${C.purple}35` }}>
+              <div className="text-xs font-black" style={{ color: C.purple }}>📋 Tarea</div>
+              <div className="text-xs" style={{ color: 'var(--text-muted)' }}>description + output</div>
+            </div>
+            <Arr color={C.purple} />
+            <Box label="📄 Resultado" color={C.green} />
+          </div>
+        </div>
+
+        {/* Nivel 2: 2 agentes secuencial */}
+        <div className="rounded-xl p-3" style={{ background: C.purple + '08', border: `1.5px solid ${C.purple}35` }}>
+          <div className="text-xs font-bold uppercase mb-2" style={{ color: C.purple }}>Nivel 2 — Pipeline Secuencial</div>
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2 justify-center">
+              <div className="px-2 py-1.5 rounded-lg text-xs font-bold" style={{ background: C.blue + '18', color: C.blue, border: `1px solid ${C.blue}35` }}>🔍 Investigador</div>
+              <Arr color={C.blue} label="informe" />
+              <div className="px-2 py-1.5 rounded-lg text-xs font-bold" style={{ background: C.green + '18', color: C.green, border: `1px solid ${C.green}35` }}>✍️ Redactor</div>
+              <Arr color={C.green} />
+              <div className="px-2 py-1 rounded-lg text-xs font-bold" style={{ background: C.amber + '18', color: C.amber }}>📰 Artículo</div>
+            </div>
+            <div className="text-center text-xs" style={{ color: 'var(--text-muted)' }}>process=Process.sequential — el output de uno es contexto del siguiente</div>
+          </div>
+        </div>
+
+        {/* Nivel 3: Jerarquía con manager */}
+        <div className="rounded-xl p-3" style={{ background: C.amber + '08', border: `1.5px solid ${C.amber}35` }}>
+          <div className="text-xs font-bold uppercase mb-2" style={{ color: C.amber }}>Nivel 3 — Jerarquía con Manager Agent</div>
+          <div className="flex flex-col items-center gap-2">
+            <div className="px-4 py-2 rounded-2xl text-center" style={{ background: C.amber + '20', border: `2px solid ${C.amber}45` }}>
+              <div className="text-xs font-black" style={{ color: C.amber }}>🎯 Manager Agent</div>
+              <div className="text-xs" style={{ color: 'var(--text-muted)' }}>process=Process.hierarchical</div>
+            </div>
+            <div className="flex gap-3">
+              {[
+                { icon: '🔍', label: 'Investigador', color: C.blue },
+                { icon: '📊', label: 'Analista', color: C.purple },
+                { icon: '✍️', label: 'Redactor', color: C.green },
+              ].map(a => (
+                <div key={a.label} className="flex flex-col items-center gap-1">
+                  <Arr dir="d" color={C.amber} />
+                  <div className="px-2 py-1.5 rounded-xl text-center" style={{ background: a.color + '18', border: `1px solid ${a.color}35` }}>
+                    <div className="text-base">{a.icon}</div>
+                    <div className="text-xs font-bold" style={{ color: a.color }}>{a.label}</div>
+                  </div>
+                  <Arr dir="u" color={a.color} />
+                </div>
+              ))}
+            </div>
+            <div className="text-xs px-3 py-1 rounded-full" style={{ color: C.amber, background: C.amber + '12' }}>
+              Manager delega, evalúa y combina resultados
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </Wrapper>
+  )
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// 30. FRAMEWORKS COMPARISON
+// ══════════════════════════════════════════════════════════════════════════
+export function DiagFrameworksComparison() {
+  const rows = [
+    { label: 'Metáfora',       lc: 'LEGO modular',      lg: 'Mapa de metro',      cr: 'Empresa con RRHH' },
+    { label: 'Curva aprendizaje', lc: 'Media',           lg: 'Alta',               cr: 'Baja' },
+    { label: 'Mejor para',     lc: 'Apps + RAG',         lg: 'Agentes complejos',  cr: 'Equipos de agentes' },
+    { label: 'Control',        lc: '🟡 Alto',            lg: '🟢 Muy alto',        cr: '🟠 Medio' },
+    { label: 'Prototipo',      lc: '⚡ Rápido',          lg: '🐢 Lento',           cr: '⚡ Muy rápido' },
+  ]
+  return (
+    <Wrapper>
+      <div className="w-full max-w-lg overflow-x-auto">
+        <table className="w-full text-xs">
+          <thead>
+            <tr>
+              <th className="text-left pb-2 pr-3" style={{ color: 'var(--text-muted)' }}></th>
+              <th className="pb-2 px-2 text-center rounded-t-lg" style={{ color: C.blue, background: C.blue + '10' }}>🔗 LangChain</th>
+              <th className="pb-2 px-2 text-center" style={{ color: C.purple, background: C.purple + '10' }}>🕸️ LangGraph</th>
+              <th className="pb-2 px-2 text-center rounded-t-lg" style={{ color: C.green, background: C.green + '10' }}>👥 CrewAI</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r, i) => (
+              <tr key={i} style={{ borderTop: `1px solid rgba(255,255,255,0.05)` }}>
+                <td className="py-1.5 pr-3 font-semibold" style={{ color: 'var(--text-dim)' }}>{r.label}</td>
+                <td className="py-1.5 px-2 text-center" style={{ background: C.blue + '06', color: C.blue }}>{r.lc}</td>
+                <td className="py-1.5 px-2 text-center" style={{ background: C.purple + '06', color: C.purple }}>{r.lg}</td>
+                <td className="py-1.5 px-2 text-center" style={{ background: C.green + '06', color: C.green }}>{r.cr}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Wrapper>
+  )
+}
